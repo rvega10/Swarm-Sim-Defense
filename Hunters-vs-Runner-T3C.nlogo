@@ -1329,10 +1329,10 @@ NIL
 1
 
 SWITCH
-560
-318
-721
-351
+547
+302
+708
+335
 can_distinguish?
 can_distinguish?
 0
