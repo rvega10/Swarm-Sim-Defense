@@ -1336,15 +1336,15 @@ SWITCH
 335
 can_distinguish?
 can_distinguish?
-0
+1
 1
 -1000
 
 SLIDER
-663
-442
-844
-475
+259
+489
+440
+522
 west-east-wind
 west-east-wind
 0
@@ -1356,10 +1356,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-664
-480
-844
-513
+260
+527
+440
+560
 north-south-wind
 north-south-wind
 0

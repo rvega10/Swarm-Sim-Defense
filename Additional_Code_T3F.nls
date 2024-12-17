@@ -151,12 +151,12 @@ to setup
 
   ask patches
     [
-      ifelse pycor = 20 
+      ifelse pycor = 45 
       [  
         set pcolor magenta
       ]
       [
-        ifelse pycor = -20
+        ifelse pycor = -45
         [
           set pcolor orange
         ]
@@ -960,7 +960,7 @@ to make_runner
       [
         set inputs [0 0]
       ]
-      set size 0.2; 2m diameter
+      set size 1; 10m diameter
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
@@ -978,10 +978,10 @@ to make_runner
         [
          ifelse start_runners_together?
            [
-              set sr_patches patches with [pycor < -20 and pxcor != 0]
+              set sr_patches patches with [pycor < -45 and pxcor != 0]
            ]
            [
-             set sr_patches patches with [pycor < -20 and pxcor != 0]
+             set sr_patches patches with [pycor < -45 and pxcor != 0]
            ]
         ]
         [
@@ -1032,8 +1032,8 @@ end
 to place_hunters
   if Hunter_setup = "Random"
   [
-      let tycor one-of (range (-20) (20) 0.01)
-      let txcor one-of (range (-24) (24) 0.01)    
+      let tycor one-of (range (-45) (45) 0.01)
+      let txcor one-of (range (-49) (49) 0.01)    
       
       setxy txcor tycor
   ]
@@ -1132,7 +1132,7 @@ to hunter_setup_strict
     while [j < number-of-sanctuaries + number-of-runners + number-of-hunters]
     [ask hunter (j )
       [
-        setxy (((j - jc) * (91 / number-of-hunters)) - 44.5) (0)
+        setxy (((j - jc) * (101 / number-of-hunters)) - 49.5) (0)
            
        if xcor > min-pxcor and xcor < max-pxcor
        [
@@ -1152,7 +1152,7 @@ to hunter_setup_strict
     while [j < number-of-sanctuaries + number-of-runners + number-of-hunters]
     [ask hunter (j )
       [
-        setxy (((j - jc) * (91 / number-of-hunters)) - 44.5) (0)
+        setxy (((j - jc) * (101 / number-of-hunters)) - 49.5) (0)
            
        set heading 180
       ]
@@ -1166,12 +1166,12 @@ end
 to clear-paint
 ask patches
       [
-       ifelse pycor = 20 
+       ifelse pycor = 45
          [  
            set pcolor magenta
          ]
          [
-           ifelse pycor = -20
+           ifelse pycor = -45
            [
              set pcolor orange
            ]

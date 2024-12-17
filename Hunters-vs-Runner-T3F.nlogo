@@ -195,10 +195,10 @@ to runner_procedure_manual
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-1026
-52
-1725
-752
+750
+38
+1449
+738
 -1
 -1
 6.842
@@ -245,17 +245,17 @@ seed-no
 seed-no
 1
 50
-26.0
+32.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-605
-649
-777
-682
+887
+1296
+1059
+1329
 vision-distance
 vision-distance
 0
@@ -267,10 +267,10 @@ m
 HORIZONTAL
 
 SLIDER
-16
-260
-188
-293
+1073
+1328
+1245
+1361
 vision-cone
 vision-cone
 0
@@ -282,25 +282,25 @@ deg
 HORIZONTAL
 
 SLIDER
-15
-300
-194
-333
+20
+173
+199
+206
 speed1
 speed1
 0
 6
-5.6
+0.6
 0.1
 1
 m/s
 HORIZONTAL
 
 SLIDER
-13
-336
-193
-369
+18
+209
+198
+242
 turning-rate1
 turning-rate1
 0
@@ -380,10 +380,10 @@ NIL
 1
 
 SLIDER
-17
-509
-215
-542
+3
+402
+201
+435
 noise-actuating-speed
 noise-actuating-speed
 0
@@ -395,10 +395,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-20
-469
-216
-502
+6
+362
+202
+395
 noise-actuating-turning
 noise-actuating-turning
 0
@@ -410,10 +410,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-239
-409
-359
-442
+240
+335
+360
+368
 paint_fov?
 paint_fov?
 1
@@ -421,10 +421,10 @@ paint_fov?
 -1000
 
 SWITCH
-239
-446
-360
-479
+240
+372
+361
+405
 draw_path?
 draw_path?
 0
@@ -432,10 +432,10 @@ draw_path?
 -1000
 
 BUTTON
-361
-446
-464
-479
+362
+372
+465
+405
 clear-paths
 ask tails [die]
 NIL
@@ -449,10 +449,10 @@ NIL
 1
 
 BUTTON
-361
-406
-461
-439
+362
+332
+462
+365
 NIL
 clear-paint
 NIL
@@ -478,14 +478,14 @@ collision_stop?
 
 SLIDER
 252
-306
+213
 425
-339
+246
 speed2
 speed2
 0
 15
-13.9
+1.4
 0.1
 1
 m/s
@@ -493,9 +493,9 @@ HORIZONTAL
 
 SLIDER
 251
-345
+252
 439
-378
+285
 turning-rate2
 turning-rate2
 0
@@ -507,15 +507,15 @@ deg/s
 HORIZONTAL
 
 SLIDER
-20
-183
-205
-216
+19
+136
+204
+169
 number-of-hunters
 number-of-hunters
 0
 1000
-10.0
+40.0
 10
 1
 NIL
@@ -569,10 +569,10 @@ For Levy Distribution
 1
 
 TEXTBOX
-249
-392
-464
-418
+250
+318
+465
+344
 Turn off to speed up sim\n
 11
 0.0
@@ -589,10 +589,10 @@ NIL
 1
 
 SLIDER
-604
-685
-780
-718
+886
+1332
+1062
+1365
 vision-distance2
 vision-distance2
 0
@@ -604,10 +604,10 @@ m
 HORIZONTAL
 
 SLIDER
-260
-265
-433
-298
+1076
+1289
+1249
+1322
 vision-cone2
 vision-cone2
 0
@@ -671,10 +671,10 @@ time-to-first-arrival
 11
 
 SWITCH
-33
-578
-271
-611
+1034
+1425
+1272
+1458
 random_start_region_hunter?
 random_start_region_hunter?
 0
@@ -697,10 +697,10 @@ sec
 HORIZONTAL
 
 CHOOSER
-25
-126
-189
-171
+1062
+1368
+1226
+1413
 selected_algorithm1
 selected_algorithm1
 "Alg A" "Alg B" "Levy" "VNQ" "Lie and Wait" "Standard Random" "Straight" "Move and Wait" "Move and Wait - Idiosyncratic"
@@ -873,10 +873,10 @@ same_parameters_between_species?
 -1000
 
 SWITCH
-23
-737
-248
-770
+774
+1485
+999
+1518
 random_start_region_runner?
 random_start_region_runner?
 0
@@ -884,10 +884,10 @@ random_start_region_runner?
 -1000
 
 SWITCH
-33
-656
-235
-689
+784
+1404
+986
+1437
 start_hunters_together?
 start_hunters_together?
 1
@@ -895,10 +895,10 @@ start_hunters_together?
 -1000
 
 SWITCH
-23
-777
-226
-810
+774
+1525
+977
+1558
 start_runners_together?
 start_runners_together?
 0
@@ -937,10 +937,10 @@ Hunters
 1
 
 SWITCH
-32
-694
-270
-727
+783
+1442
+1021
+1475
 start_hunters_pointing_away?
 start_hunters_pointing_away?
 0
@@ -948,10 +948,10 @@ start_hunters_pointing_away?
 -1000
 
 SLIDER
-29
-429
-201
-462
+15
+322
+187
+355
 state-disturbance
 state-disturbance
 0
@@ -1232,14 +1232,14 @@ NIL
 1
 
 CHOOSER
-513
-194
-732
-239
+466
+195
+685
+240
 Hunter_Setup
 Hunter_Setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Picket" "Imperfect Picket"
-0
+1
 
 BUTTON
 534
@@ -1259,10 +1259,10 @@ NIL
 1
 
 SWITCH
-547
-302
-708
-335
+890
+1370
+1051
+1403
 can_distinguish?
 can_distinguish?
 0
@@ -1270,10 +1270,10 @@ can_distinguish?
 -1000
 
 SLIDER
-663
-442
-844
-475
+6
+445
+187
+478
 west-east-wind
 west-east-wind
 0
@@ -1285,10 +1285,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-664
-480
-844
-513
+7
+483
+187
+516
 north-south-wind
 north-south-wind
 0
@@ -1300,25 +1300,25 @@ m/s
 HORIZONTAL
 
 TEXTBOX
-610
-629
-760
-647
+892
+1270
+1042
+1294
 Unused in this sim
 11
 0.0
 1
 
 SLIDER
-575
-367
-777
-400
+9
+252
+211
+285
 hunter-travel-range
 hunter-travel-range
 0
 1000
-500.0
+100.0
 100
 1
 m
