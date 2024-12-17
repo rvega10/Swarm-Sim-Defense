@@ -7,6 +7,7 @@ to go
 
   background_procedures
 
+
   ask runners
     [
 
@@ -1784,74 +1785,6 @@ NetLogo 6.4.0
       <value value="&quot;Levy&quot;"/>
     </enumeratedValueSet>
     <steppedValueSet variable="number-of-hunters" first="15" step="15" last="150"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="50"/>
-  </experiment>
-  <experiment name="Comaparing_Algs_Log_scale" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="50001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Ambush&quot;"/>
-      <value value="&quot;Straight&quot;"/>
-      <value value="&quot;Levy&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="number-of-hunters">
-      <value value="1"/>
-      <value value="2"/>
-      <value value="4"/>
-      <value value="6"/>
-      <value value="10"/>
-      <value value="18"/>
-      <value value="32"/>
-      <value value="57"/>
-      <value value="100"/>
-      <value value="178"/>
-      <value value="317"/>
-      <value value="563"/>
-      <value value="1000"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="40"/>
-  </experiment>
-  <experiment name="Turbo_Pi" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="50001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Alg A&quot;"/>
-      <value value="&quot;Alg B&quot;"/>
-      <value value="&quot;Standard Random&quot;"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="number-of-hunters" first="5" step="5" last="150"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="40"/>
-  </experiment>
-  <experiment name="Band_bottom_half" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="25001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Straight&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="number-of-hunters">
-      <value value="1"/>
-      <value value="2"/>
-      <value value="4"/>
-      <value value="6"/>
-      <value value="10"/>
-      <value value="18"/>
-      <value value="32"/>
-      <value value="57"/>
-      <value value="100"/>
-      <value value="178"/>
-    </enumeratedValueSet>
     <steppedValueSet variable="seed-no" first="1" step="1" last="50"/>
   </experiment>
 </experiments>
