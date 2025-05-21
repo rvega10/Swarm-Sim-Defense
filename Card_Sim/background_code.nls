@@ -1389,7 +1389,7 @@ to make_trap
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0]
-      set size 1 / meters-per-patch ;10 meter diameter
+      set size 10 / meters-per-patch ;10 meter diameter
 
       set fov-list-traps (list )
       set fov-list-stags (list )
@@ -1428,7 +1428,7 @@ to make_dog
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0]
-      set size 2 / meters-per-patch;20 meter diameter
+      set size 20 / meters-per-patch;20 meter diameter
 
       set fov-list-traps (list )
       set fov-list-stags (list )
@@ -1517,51 +1517,10 @@ to make_stag
 end
 
 to place_traps; defines region and/or orientation of where the traps should start
-  if trap_setup = "Random - Uniform"
+  if trap_setup = "Random"
    [
       let tycor one-of (range (min-pycor) (0) 0.01)
       let txcor one-of (range (min-pxcor) (max-pxcor) 0.01)
-      setxy txcor tycor
-   ]
-  
-  if trap_setup = "Random - Gaussian"
-   [
-      let txcor random-normal 0 6.5
-      let tycor random-normal -10 3.25
-    
-      while [txcor > max-pxcor or txcor < min-pxcor]
-      [set txcor random-normal 0 6.5]
-      
-      while [tycor > 0 or tycor < min-pycor]
-      [set tycor random-normal -10 3.25]
-      
-      setxy txcor tycor
-   ]
-  
-  if trap_setup = "Random - Inverse-Gaussian"
-   [
-    
-      let txcor abs random-normal 0 6.5 
-      let sign one-of [-1 1]         
-      set txcor ( sign * (20 - txcor) )
-      
-      let tycor abs (random-normal -10 3.25 )
-      let sign1 one-of [-1 1]         
-      set tycor -10 + ( sign1 * (10 - tycor) )
-      
-      if txcor > max-pxcor
-      [set txcor (max-pxcor - .1)]
-        
-      if txcor < min-pxcor
-      [set txcor (min-pxcor + .1) ]
-      
-      if tycor > 0
-      [set tycor 0]
-        
-      if tycor < min-pxcor
-      [set tycor (min-pycor + .1) ]
-      
-      
       setxy txcor tycor
    ]
 

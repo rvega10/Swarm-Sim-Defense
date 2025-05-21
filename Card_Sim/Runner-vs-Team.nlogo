@@ -76,13 +76,13 @@ to go
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-837
-66
-1397
-627
+861
+68
+1312
+520
 -1
 -1
-13.463415
+10.805
 1
 10
 1
@@ -252,7 +252,7 @@ SWITCH
 127
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -310,7 +310,7 @@ number-of-traps
 number-of-traps
 0
 10000
-5700.0
+100.0
 100
 1
 NIL
@@ -601,12 +601,12 @@ time-of-first-stag-detected
 CHOOSER
 23
 86
-244
+221
 131
 Trap_setup
 Trap_setup
-"Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-1
+"Random" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
+0
 
 BUTTON
 600
@@ -748,7 +748,7 @@ number-of-dogs
 number-of-dogs
 0
 5
-1.0
+0.0
 1
 1
 NIL
@@ -1329,49 +1329,13 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="scoring_only_traps" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="scoring_only_traps" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <timeLimit steps="6000"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
     <metric>win-loss-ratio</metric>
-    <enumeratedValueSet variable="Trap_Setup">
-      <value value="&quot;Random - Uniform&quot;"/>
-      <value value="&quot;Random - Gaussian&quot;"/>
-      <value value="&quot;Random - Inverse-Gaussian&quot;"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="number-of-traps" first="100" step="100" last="5000"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="20"/>
-  </experiment>
-  <experiment name="scoring_only_traps_scale" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="6000"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>win-loss-ratio</metric>
-    <enumeratedValueSet variable="Trap_Setup">
-      <value value="&quot;Random - Uniform&quot;"/>
-      <value value="&quot;Random - Gaussian&quot;"/>
-      <value value="&quot;Random - Inverse-Gaussian&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="number-of-traps">
-      <value value="1"/>
-      <value value="2"/>
-      <value value="4"/>
-      <value value="6"/>
-      <value value="10"/>
-      <value value="18"/>
-      <value value="32"/>
-      <value value="57"/>
-      <value value="100"/>
-      <value value="178"/>
-      <value value="317"/>
-      <value value="563"/>
-      <value value="1000"/>
-      <value value="1778"/>
-      <value value="3162"/>
-      <value value="5623"/>
-    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-traps" first="50" step="50" last="1000"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
