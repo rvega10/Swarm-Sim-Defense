@@ -1,19 +1,285 @@
-__includes ["background_code.nls"]
+extensions [palette
+            profiler]
+;
+; Variable
+;
+breed [ traps trap]
+breed [ stags stag]
+breed [ dogs dog]
+breed [cues cue]
+breed [discs disc]
+breed[ place-holders place-holder]
+breed[ waypoints waypoint]
+
+globals [ tick-delta
+          n
+          i
+          time-of-stag-escape
+          time-to-first-see-list
+          time-of-stag-caught
+          sr_patches
+          end_flag
+          score
+          cue-x-out
+          cue-y-out
+          win-loss-list
+          win-loss-val
+         ]
+
+
+traps-own [
+          velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           true_velocity
+           V
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           speed-w-noise
+           turning-w-noise
+           levy_time
+           rand_turn
+           step_count
+           step_time
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           response_type
+           fov-list-traps
+           detect_traps?
+           detect_stags?
+           detect_dogs?
+           fov-list-stags
+           stuck_count
+           idiosyncratic_val
+           response_duration_count
+           rand-head-distrbuance
+           distance_traveled
+           fov-list-patches
+           stag_caught_flag
+           temp-turning-val
+           random_switch-timer
+           alternating_procedure_val
+           fov-list-traps-same1
+           fov-list-traps-same2
+           fov-list-traps-other1
+           fov-list-traps-other2
+           fov-list-dogs
+          ]
+dogs-own [
+          velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           true_velocity
+           V
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           speed-w-noise
+           turning-w-noise
+           levy_time
+           rand_turn
+           step_count
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           response_type
+           fov-list-traps
+           detect_traps?
+           detect_stags?
+           detect_dogs?
+           fov-list-stags
+           stuck_count
+           idiosyncratic_val
+           response_duration_count
+           rand-head-distrbuance
+           distance_traveled
+           fov-list-patches
+           stag_caught_flag
+           temp-turning-val
+           random_switch-timer
+           alternating_procedure_val
+           fov-list-traps-same1
+           fov-list-traps-same2
+           fov-list-traps-other1
+           fov-list-traps-other2
+           fov-list-dogs
+           measured_stag_x-position_list
+           measured_stag_y-position_list
+           measured_stag_time_list
+           predicted_stag_heading
+           predicted_stag_speed
+           predicted_stag_ang-velocity
+           old_predicted_stag_heading
+           predicted_stag_speed_list
+           predicted_stag_ang-velocity_list
+          ]
+
+
+stags-own [
+           velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           true_velocity
+           V
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           rand-head-distrbuance
+           speed-w-noise
+           turning-w-noise
+           levy_time
+           rand_turn
+           step_count
+           step_time
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           response_type
+           stag_caught_flag
+           fov-list-stags
+           fov-list-traps
+           detect_stags?
+           detect_dogs?
+           detect_traps?
+           stuck_count
+           idiosyncratic_val
+           furthest_ycor
+           response_duration_count
+           fov-list-patches
+           fov-list-dogs
+           distance_traveled
+          ]
+
+patches-own [
+            real-bearing-patch
+            closest-trap-dist
+          ]
+
+discs-own [
+            age
+          ]
+
+cues-own [
+            age
+          ]
+
+
+
+;;
+;; Initialization Procedures
+;;
+
+to setup
+  clear-all
+  random-seed seed-no
+
+  set tick-delta 0.1 ; 10 ticks in one second
+
+  ask patches ;set background color
+    [
+        ifelse abs(pycor) = max-pycor or abs(pxcor) = max-pxcor
+        [
+          set pcolor red
+        ]
+        [
+          ifelse pycor = (min-pycor + 1 )
+          [set pcolor green]
+          [set pcolor white]
+        ]
+    ]
+
+  ; create the set number of agents according to sliders in interface tab
+  repeat number-of-stags [make_stag]
+  repeat number-of-dogs [make_dog]
+  repeat number-of-traps [make_trap]
+
+
+  ; specify what each type of agent can detect
+  ask stags
+  [
+    ; set whether or not the stag can detect specific types of agents
+    set detect_stags? false
+    set detect_traps? false
+    set detect_dogs? true
+  ]
+
+  ask dogs
+  [
+    ; set whether or not the trap can detect specific types of agents
+    set detect_traps? false
+    set detect_stags? true
+  ]
+
+
+  ask traps
+  [
+    ; set whether or not the trap can detect specific types of agents
+    set detect_traps? false
+    set detect_stags? false
+  ]
+
+
+
+  ; position traps and dogs according to selection in drop down choosers in interface tab
+  trap_setup_strict
+  dog_setup_strict
+
+
+
+
+  ; adds extra "ghost" turtles that make adding and removing agents during simulation  easier
+  create-place-holders 25
+  [
+    setxy max-pxcor max-pycor
+    ht
+  ]
+
+  ; adds extra turtles to show predicted path of stag if "lead_stag?" is on
+  create-cues (20 * number-of-stags)
+  [
+    setxy max-pxcor max-pycor
+    set shape "boat"
+    set size 90 / meters-per-patch ; 90 meter length
+    set color yellow
+    set cue-x-out "N/A"
+    set cue-y-out "N/A"
+
+    ht
+  ]
+
+
+  set-default-shape discs "ring"
+
+  reset-ticks
+end
+
 
 ;;
 ;; Runtime Procedures
 ;;
 to go
 
-  background_procedures ; for general functions like showing FOV
+  background_procedures ; for general functions like showing FOV and paths
 
   ask stags
     [
-      ; set whether or not the stag can detect specific types of agents
-      set detect_stags? false
-      set detect_traps? false
-      set detect_dogs? true
-
       ifelse selected_algorithm_stag = "Manual Control"
       [
         stag_procedure_manual
@@ -25,64 +291,1675 @@ to go
 
  ask traps
     [
-      ; set whether or not the trap can detect specific types of agents
-      set detect_traps? false
-      set detect_stags? false
       trap_procedure
     ]
 
   ask dogs
     [
-      ; set whether or not the trap can detect specific types of agents
-      set detect_traps? false
-      set detect_stags? true
       dog_procedure
     ]
 
-  ask centroids
-  [
-    setxy (mean [xcor] of traps) (mean [ycor] of traps)
-    ht
-  ]
 
   measure_results
 
-  if end_flag = 1
+  if end_flag = 1 ; if any of the end conditions are met (stag escapes, stag is caught) it halts the simulation
   [
-    ifelse time-to-first-arrival = 0
+    ifelse time-of-stag-escape = 0
      [
-       set win-loss-list fput 1 win-loss-list
+       set win-loss-val 1
      ]
      [
-       set win-loss-list fput 0 win-loss-list
+       set win-loss-val 0
      ]
-
-
-
-    set win-loss-ratio (sum win-loss-list) / length win-loss-list
-
-    ifelse loop_sim?
-     [
-       set seed-no (seed-no + 1)
-       setup
-     ]
-     [
-       stop
-     ]
-
+    stop
   ]
 
   tick-advance 1
 end
+
+
+to background_procedures
+ clear-paint
+
+ifelse paint_fov?
+  [
+    ask discs ; removes older discs to keep FOV display current
+      [
+         set age age + 1
+         if age = 1 [ die ]
+      ]
+
+    ask traps
+      [
+        display_FOV
+      ]
+
+    ask stags
+      [
+        display_FOV
+      ]
+
+    ask dogs
+      [
+        display_FOV
+      ]
+  ]
+  [
+    ask discs [die]
+  ]
+
+  ifelse draw_path?
+  [
+    ask stags [pd]
+    ask traps [pd]
+    ask dogs [pd]
+  ]
+  [
+    ask stags [pu]
+    ask traps [pu]
+    ask dogs [pu]
+  ]
+end
+
+to display_FOV ;procedure that uses fake agents to display FOV rather than painting patches (if the fov is certain values)
+
+  let vision-dd 0
+  let vision-cc 0
+
+  (ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+  member? self stags
+    [
+      set vision-dd vision-distance-stags
+      set vision-cc vision-cone-stags
+    ]
+  member? self dogs
+    [
+      set vision-dd vision-distance-dogs
+      set vision-cc vision-cone-dogs
+    ]
+
+  )
+
+  (ifelse vision-cc = 360
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        palette:set-transparency 50
+      ]
+    ]
+    vision-cc = 180
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        set shape "180-deg-fov"
+        palette:set-transparency 50
+      ]
+    ]
+    vision-cc = 90
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        set shape "90-deg-fov"
+        palette:set-transparency 50
+      ]
+    ]
+    vision-cc = 45
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        set shape "45-deg-fov"
+        palette:set-transparency 50
+      ]
+    ]
+    vision-cc = 60
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        set shape "60-deg-fov"
+        palette:set-transparency 50
+      ]
+    ]
+    vision-cc = 30
+    [
+      hatch-discs 1
+      [
+        set size 2 * (vision-dd / meters-per-patch)
+        set heading ([heading] of myself)
+        set shape "30-deg-fov"
+        palette:set-transparency 50
+      ]
+    ]
+    [
+      paint-patches-in-FOV
+    ]
+  )
+
+end
+
+to measure_results
+
+    if time-of-stag-escape = 0
+    [
+      if count stags with [pycor <= ((min-pycor + 1) + (size / meters-per-patch) / 2)] > 0
+      [set time-of-stag-escape ticks]
+    ]
+
+    if time-of-stag-caught = 0
+    [
+      if count traps with [stag_caught_flag = 1] > 0 or count dogs with [stag_caught_flag = 1] > 0
+      [set time-of-stag-caught ticks]
+    ]
+
+    if (time-of-stag-escape > 0) or  (time-of-stag-caught > 0)
+     [set end_flag 1]
+
+end
+
+
+
+to stag_procedure
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+   set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+  ifelse response_duration_count > 0 ; if value is positive, it performs whatever the response is (i.e. if set to 'turn-away" it will make sure it turns in place for a full second even if it detects something else)
+    [
+      response_procedure ; if agent is detected, it stops everything and executes the desired algorithm for one second
+
+      set response_duration_count (response_duration_count - 1) ;counts down
+      set color red
+    ]
+    [
+     ifelse length fov-list-traps > 0  or length fov-list-dogs > 0; if one or more traps/dogs are detected, it reacts according to whatever the selected algorithm is (default is to turn away)
+       [
+         set response_type "turn-away"
+         set response_duration_count 1;
+       ]
+       [
+         ifelse stuck_count > 100 ; checks to see if agent is stuck (e.g. against a wall) for 100 ticks
+           [
+            set response_type "90-in-place"
+            set response_duration_count (1 / tick-delta)
+            set stuck_count 0
+           ]
+           [
+             ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
+              go_to_south_goal
+              set color orange
+           ]
+       ]
+   ]
+
+ update_agent_state; updates states of agents (i.e. position and heading)
+
+end
+
+to stag_procedure_manual ; buttons control what the inputs of the stag is, this is here to make the stag actually use those inputs to move
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+  set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+  update_agent_state; updates states of agents (i.e. position and heading)
+
+end
+
+
+to trap_procedure
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+  set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+
+ ifelse distance_traveled < trap_travel_range
+ [
+ ifelse pcolor = red ; if the trap is outside of the environment (ie in the red zone) it starts trying to get back into the white area
+   [
+     get_back_in_bounds
+   ]
+   [
+     select_alg_procedure ; this is chosen in interface tab and is what the traps do when not out of bounds
+   ]
+  ]
+  [
+    set inputs (list 0 90 0) ; stop moving
+  ]
+
+
+
+ update_agent_state; updates states of agents (i.e. position and heading)
+
+ check_if_touching_stag
+
+end
+
+to dog_procedure
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+  set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+
+  intercept
+
+ update_agent_state; updates states of agents (i.e. position and heading)
+
+ check_if_touching_stag
+
+end
+
+to check_if_touching_stag ; checks to see if the agent is touching the ellipsoidal body of the stag
+  let bearing_to_stag 0
+
+  let my_x xcor
+  let my_y ycor
+  let my_size size
+
+  let stag_x [xcor] of stag 0
+  let stag_y [ycor] of stag 0
+  let stag_heading [heading] of stag 0 ; 0 deg is pointing North
+  set stag_heading (90 - stag_heading) ; updates heading to be in traditional cartestion coordiantes (0 deg is pointing East)
+  let stag_major_axis_length [size] of stag 0  ; major axis is the length of stag which is 90m
+  let stag_minor_axis_length ([size] of stag 0) / 6 ; minor axis is width of stag which is 15m or 16.6% if length
+
+  let x_diff (my_x - stag_x)
+  let y_diff (my_y - stag_y)
+
+  if  not (x_diff = 0 and y_diff = 0)
+  [set bearing_to_stag atan y_diff x_diff]
+
+  let my_x_to_stag_frame ((x_diff * cos(stag_heading)) + (y_diff * sin (stag_heading)))
+  let my_y_to_stag_frame ((-1 * x_diff * sin(stag_heading)) + (y_diff * cos (stag_heading)))
+
+  let ellipse_eq ((my_x_to_stag_frame ^ 2) / (((stag_major_axis_length + my_size)/ 2)^ 2)) + ((my_y_to_stag_frame ^ 2) / (((stag_minor_axis_length + my_size)/ 2)^ 2))
+
+  ifelse ellipse_eq <= 1
+  [ set stag_caught_flag 1]
+  [ set stag_caught_flag 0]
+
+end
+
+
+
+to intercept
+
+  if length fov-list-stags > 0
+  [
+    ifelse length measured_stag_x-position_list > 100
+      [
+       set measured_stag_x-position_list remove-item 0 measured_stag_x-position_list
+        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
+       ]
+      [
+        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
+      ]
+
+    ifelse length measured_stag_y-position_list > 100
+      [
+       set measured_stag_y-position_list remove-item 0 measured_stag_y-position_list
+        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
+       ]
+      [
+        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
+      ]
+
+    ifelse length measured_stag_time_list > 100
+      [
+       set measured_stag_time_list remove-item 0 measured_stag_time_list
+        set measured_stag_time_list lput (ticks) measured_stag_time_list
+       ]
+      [
+        set measured_stag_time_list lput (ticks) measured_stag_time_list
+      ]
+  ]
+
+  ifelse length measured_stag_x-position_list > 3
+  [
+    let delta-x (last measured_stag_x-position_list - item (length measured_stag_x-position_list - 2) measured_stag_x-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
+    let delta-y (last measured_stag_y-position_list - item (length measured_stag_y-position_list - 2) measured_stag_y-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
+
+
+    set predicted_stag_speed sqrt (delta-x ^ 2 + delta-y ^ 2)
+    if not (delta-x = 0 and delta-y = 0)
+      [set predicted_stag_heading atan delta-x delta-y]
+
+    set predicted_stag_ang-velocity ((predicted_stag_heading - old_predicted_stag_heading) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list))
+
+    set old_predicted_stag_heading predicted_stag_heading
+
+
+  ]
+  [
+    set predicted_stag_speed 0
+    set predicted_stag_heading 0
+  ]
+
+  ifelse length predicted_stag_speed_list > 100
+    [
+     set predicted_stag_speed_list remove-item 0 predicted_stag_speed_list
+      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
+     ]
+    [
+      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
+    ]
+
+  ifelse length predicted_stag_ang-velocity_list > 100
+    [
+     set predicted_stag_ang-velocity_list remove-item 0 predicted_stag_ang-velocity_list
+      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
+     ]
+    [
+      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
+    ]
+
+
+  if length measured_stag_x-position_list > 3
+  [place-cues]
+
+  let target_bearing (0) - heading
+
+
+
+  ifelse lead_stag?
+  [
+;    let target-cue (max-one-of (cues with [[ycor] of self < [ycor] of stag 0]) [distance stag 0] )
+    let target-cue min-one-of cues [abs(distance stag 0 - distance myself)]
+    ask target-cue
+    [set color blue]
+    ifelse distance min-one-of cues [distance myself] < (predicted_stag_speed * meters-per-patch)
+    [
+      set target_bearing (towards min-one-of stags [distance myself]) - heading
+    ]
+    [
+      ifelse length measured_stag_x-position_list <= 3
+      [
+        set target_bearing (0) - heading
+      ]
+      [
+        set target_bearing (towards target-cue ) - heading
+
+      ]
+    ]
+  ]
+  [
+    set target_bearing (towards min-one-of stags [distance myself]) - heading
+  ]
+
+  ifelse length measured_stag_x-position_list > 3
+      [
+        ifelse target_bearing < -180
+          [
+            set target_bearing target_bearing + 360
+           ]
+          [
+            ifelse target_bearing > 180
+            [set target_bearing target_bearing - 360]
+            [set target_bearing target_bearing]
+          ]
+
+        (ifelse ((target_bearing) > -1 and target_bearing < 1)
+          [set inputs (list (speed-w-noise) 90 0)]
+          (target_bearing) > 1
+          [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+          (target_bearing) < -1
+          [set inputs (list (speed-w-noise) 90 (- turning-w-noise))])
+      ]
+      [
+        set inputs (list (0) 90 (0))
+      ]
+
+end
+
+
+to place-cues
+
+  set i (count stags + count traps + count dogs + count place-holders + count waypoints)
+
+  let max_i (count stags + count traps + count dogs + count place-holders + count waypoints)
+
+  let current-x last measured_stag_x-position_list
+  let current-y last measured_stag_y-position_list
+  let current-heading predicted_stag_heading
+
+  let predicted_speed mean predicted_stag_speed_list
+  let predicted_ang-velocity mean predicted_stag_ang-velocity_list
+
+  while [i < (count stags + count traps + count dogs + count place-holders + count cues + count waypoints)]
+    [
+      ask cue i
+      [
+        set color yellow
+        st
+        let cue-x 0
+        let cue-y 0
+        let cue-heading 0
+
+        ifelse abs predicted_ang-velocity < 0.0001
+        [
+         set cue-heading current-heading + (predicted_ang-velocity * meters-per-patch * (i - max_i + 1))
+         set cue-x current-x + (predicted_speed * sin(cue-heading) * meters-per-patch * (i - max_i + 1)) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
+         set cue-y current-y + (predicted_speed * cos(cue-heading)* meters-per-patch * (i - max_i + 1))
+
+        ]
+        [
+
+        let x_c current-x + (predicted_speed / (predicted_ang-velocity * pi / 180)) * cos(current-heading)
+        let y_c current-y - (predicted_speed / (predicted_ang-velocity * pi / 180)) * sin(current-heading)
+
+
+        set cue-heading current-heading + (predicted_ang-velocity * meters-per-patch * (i - max_i + 1))
+        set cue-x x_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * sin(cue-heading - 90)) ;* 100 * (i - (count stags + count traps + count dogs) + 1)) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
+        set cue-y y_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * cos(cue-heading - 90) );* 100 * (i - (count stags + count traps + count dogs) + 1))
+        ]
+
+
+
+        if cue-x > max-pxcor
+         [
+           set cue-x max-pxcor
+           ifelse cue-y-out = "N/A"
+            [
+              set cue-y-out cue-y
+              set cue-y cue-y-out
+            ]
+            [set cue-y cue-y-out]
+
+         ]
+
+        if cue-x < min-pxcor
+        [
+          set cue-x min-pxcor
+          ifelse cue-y-out = "N/A"
+            [
+              set cue-y-out cue-y
+              set cue-y cue-y-out
+            ]
+            [set cue-y cue-y-out]
+        ]
+
+        if cue-y > max-pycor
+         [
+           set cue-y max-pycor
+           ifelse cue-x-out = "N/A"
+            [
+              set cue-x-out cue-x
+              set cue-x cue-x-out
+            ]
+            [set cue-x cue-x-out]
+         ]
+
+        if cue-y < min-pycor
+        [
+          set cue-y min-pycor
+          ifelse cue-x-out = "N/A"
+            [
+              set cue-x-out cue-x
+              set cue-x cue-x-out
+            ]
+            [set cue-x cue-x-out]
+        ]
+
+        setxy cue-x cue-y
+        set heading cue-heading
+      ]
+      set i (i + 1)
+    ]
+  set cue-x-out "N/A"
+  set cue-y-out "N/A"
+
+
+end
+
+
+to select_alg_procedure
+
+  if selected_algorithm_traps = "Standard Random"
+  [standard_random_walk]
+
+  if selected_algorithm_traps = "Levy"
+  [real_levy]
+
+  if selected_algorithm_traps = "Lie and Wait"
+  [lie-and-wait]
+
+  if selected_algorithm_traps = "Straight"
+  [straight]
+
+  if selected_algorithm_traps = "Follow Waypoints"
+  [follow_waypoints]
+
+end
+
+; stag algorithm - - - - - - - - - - -
+to go_to_south_goal ; stag attempts to drive its heading towards the south end of the environment
+   let target_bearing 180 - heading
+
+      ifelse target_bearing < -180
+        [
+          set target_bearing target_bearing + 360
+         ]
+        [
+          ifelse target_bearing > 180
+          [set target_bearing target_bearing - 360]
+          [set target_bearing target_bearing]
+        ]
+
+      (ifelse ((target_bearing) > -1 and target_bearing < 1)
+        [set inputs (list (speed-w-noise) 90 0)]
+        (target_bearing) > 1
+        [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+        (target_bearing) < -1
+        [set inputs (list (speed-w-noise) 90 (- turning-w-noise))])
+
+end
+
+to get_back_in_bounds ; dogs and traps attempts return to environment if they are in the outside zone (red)
+
+   let target_bearing 0
+
+   ifelse abs(abs(xcor) - max-pxcor) < abs(abs(ycor) - max-pycor)
+   [
+     ifelse xcor < 0
+     [
+       set target_bearing 90 - heading
+     ]
+     [
+       set target_bearing 270 - heading
+     ]
+   ]
+   [
+     ifelse ycor < 0
+     [
+       set target_bearing 0 - heading
+     ]
+     [
+       set target_bearing 180 - heading
+     ]
+   ]
+
+      ifelse target_bearing < -180
+        [
+          set target_bearing target_bearing + 360
+         ]
+        [
+          ifelse target_bearing > 180
+          [set target_bearing target_bearing - 360]
+          [set target_bearing target_bearing]
+        ]
+
+      (ifelse ((target_bearing) > -1 and target_bearing < 1)
+        [set inputs (list (speed-w-noise) 90 0)]
+        (target_bearing) > 1
+        [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+        (target_bearing) < -1
+        [set inputs (list (speed-w-noise) 90 (- turning-w-noise))])
+
+end
+
+
+; trap algorithms --------------
+
+to straight ; go straight forwards
+  set inputs (list speed-w-noise 90 0)
+end
+
+to lie-and-wait ; stay in place
+      set inputs (list 0 90 0)
+end
+
+to standard_random_walk ;
+
+  ifelse step_count < (step_length_fixed + idiosyncratic_val) ; while step count is less than the set step_length, it should either be turning in place or going straight
+  [
+
+    ifelse step_count < (1 / tick-delta) ; for the first 10 ticks of the "step", turn in place at a rate of rand_turn
+     [
+       set inputs (list (0) 90 rand_turn)
+     ]
+     [
+      set inputs (list speed-w-noise 90 0) ; if nothing is detected, goes straight forward at a speed of speed-w-noise
+
+     ]
+
+    set step_count step_count + 1 ;counts up
+  ]
+  [
+     choose_rand_turn ; at the end of the step, choose random turning rate
+     set step_count 0 ; reset turning rate to zero
+  ]
+
+end
+
+
+to real_levy  ;; classic levy that chooses direction at beginning of step and moves straight in that line. Step lengths are chosen from levy distribution
+
+  ifelse step_count < step_time; while step count is less than the the randomly chosen step_length, it should either be turning in place or going straight
+  [
+
+    ifelse step_count < (1 / tick-delta) ; for the first 10 ticks of the "step", turn in place at a rate of rand_turn
+     [
+       set color blue
+        set inputs (list (0) 90 rand_turn)
+     ]
+     [
+       set color red
+       set inputs (list speed-w-noise 90 0) ; if nothing is detected, goes straight forward at a speed of speed-w-noise
+     ]
+
+    set step_count step_count + 1 ;increment step count
+  ]
+  [
+      ; at the end of the step, choose a new step length from levy distribution and choose random turning rate
+       set step_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+       while [step_time > round (max_levy_time / tick-delta)]
+         [set step_time round (100 * (1 / (random-gamma 0.5 (c / 2 ))))]
+
+       choose_rand_turn
+       set step_count 0
+  ]
+end
+
+to follow_waypoints
+
+  if count waypoints > 0
+  [
+  let target (min-one-of waypoints [distance myself] )
+
+  let target_bearing towards target - heading
+
+  ifelse target_bearing < -180
+    [
+      set target_bearing target_bearing + 360
+     ]
+    [
+      ifelse target_bearing > 180
+      [set target_bearing target_bearing - 360]
+      [set target_bearing target_bearing]
+    ]
+
+
+  ifelse (target_bearing) > 0
+    [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+    [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+    ]
+end
+
+to set_waypoint
+
+  ask place-holder ((count stags + count traps + count dogs + count waypoints))
+  [  set breed waypoints
+      st
+      setxy ([xcor] of stag 0) 0
+
+
+
+
+      set shape "x"
+      set color red
+      set size 100 / meters-per-patch ; sets size to 10m
+    ]
+
+end
+
+
+;
+;
+;-------------- Nested functions and Setup Procedures below--------------
+;
+;
+
+to response_procedure
+  let target (max-one-of place-holders [distance myself]);
+  let hostile (max-one-of place-holders [distance myself])
+
+
+   set target one-of stags
+
+  if response_type = "turn-away"
+    [
+      if breed = stags
+      [
+        set hostile min-one-of dogs [distance myself]
+      ]
+      let hostile_bearing towards hostile - heading
+
+      ifelse hostile_bearing < -180
+        [
+          set hostile_bearing hostile_bearing + 360
+         ]
+        [
+          ifelse hostile_bearing > 180
+          [set hostile_bearing hostile_bearing - 360]
+          [set hostile_bearing hostile_bearing]
+        ]
+
+      ifelse (hostile_bearing) > 0
+        [set inputs (list (speed-w-noise) 90(- turning-w-noise))]
+        [set inputs (list (speed-w-noise) 90( turning-w-noise))]
+     ]
+
+
+
+    if response_type = "180-in-place"
+    [
+      set inputs (list (0) 90 180)
+    ]
+
+    if response_type = "stop"
+      [
+        set inputs (list (0) 90 0)
+      ]
+
+
+    if response_type = "towards-target"
+    [
+      let target_bearing towards target - heading
+
+      ifelse target_bearing < -180
+        [
+          set target_bearing target_bearing + 360
+         ]
+        [
+          ifelse target_bearing > 180
+          [set target_bearing target_bearing - 360]
+          [set target_bearing target_bearing]
+        ]
+
+
+      ifelse (target_bearing) > 0
+        [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+        [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+     ]
+
+end
+
+to choose_rand_turn
+  let turning-rate-val 0
+  if member? self traps
+    [
+      set turning-rate-val turning-rate-rw
+    ]
+
+  if distribution_for_direction = "uniform"
+  [set rand_turn (- turning-rate-val) + (random (2 * turning-rate-val + 1)) ]
+
+  if distribution_for_direction = "gaussian"
+  [ set rand_turn round (random-normal 0 (turning-rate-val / 3))]
+
+  if distribution_for_direction = "triangle"
+  [set rand_turn (random turning-rate-val) - (random turning-rate-val) ]
+end
+
+
+to  set_actuating_variables
+  if ticks mod 1 = 0
+  [
+    set rand-x random-normal 0 state-disturbance_xy
+    set rand-y random-normal 0 state-disturbance_xy
+    set rand-head-distrbuance random-normal 0 state-disturbance_head
+  ]
+
+  (ifelse member? self traps
+  [
+     set turning-w-noise random-normal (turning-rate-traps) noise-actuating-turning
+     set speed-w-noise random-normal (speed-traps / meters-per-patch) (noise-actuating-speed)
+
+  ]
+  member? self stags
+  [
+
+    set speed-w-noise random-normal (speed-stags / meters-per-patch) (noise-actuating-speed)
+    set turning-w-noise random-normal (turning-rate-stags) noise-actuating-turning
+
+  ]
+  member? self dogs
+  [
+
+    set speed-w-noise random-normal (speed-dogs / meters-per-patch) (noise-actuating-speed)
+    set turning-w-noise random-normal (turning-rate-dogs) noise-actuating-turning
+
+  ]
+  )
+end
+
+to do_sensing
+
+  ifelse detect_stags?
+    [find-stags-in-FOV]
+    [set fov-list-stags (list)]
+
+  ifelse detect_traps?
+    [find-traps-in-FOV ]
+    [set fov-list-traps (list)]
+
+  ifelse detect_dogs?
+    [find-dogs-in-FOV ]
+    [set fov-list-dogs (list)]
+
+end
+
+to update_agent_state
+  agent_dynamics
+
+
+   set distance_traveled (distance_traveled + (item 0 inputs) * meters-per-patch * tick-delta)
+
+
+
+;   do_collisions ;; temporarly removed collisions between defense to speed up sims
+
+
+  let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
+  let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
+
+
+  set true_velocity (list (( item 0 velocity) + (impact-x) + (rand-x )) (( item 1 velocity ) + (impact-y) + (rand-y )))
+  set V sqrt ((item 0 true_velocity * item 0 true_velocity) + (item 1 true_velocity * item 1 true_velocity))
+
+  ;; makes sure agents don't go through edge (if the calculated next position is more than the boundary, it just forces the agent to stay in place)
+  if nxcor > max-pxcor or nxcor < min-pxcor
+   [
+     set nxcor xcor
+     set nycor ycor
+     set stuck_count stuck_count + 1
+   ]
+
+  if nycor > max-pycor or nycor < min-pycor
+    [ set nycor ycor
+      set nxcor xcor
+      set stuck_count stuck_count + 1]
+
+  setxy nxcor nycor
+
+  let nheading heading + (angular-velocity * tick-delta  ) + (impact-angle * tick-delta ) + (rand-head-distrbuance * tick-delta)
+  set heading nheading
+end
+
+
+
+to add_trap
+  ask place-holder ((count stags + count traps + count dogs))
+  [  set breed traps
+      st
+      setxy 0.3 0
+
+      place_traps
+
+      set velocity [ 0 0 ]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set fov-list-traps (list )
+      set fov-list-stags (list )
+
+      set detect_stags? false
+      set detect_traps? false
+      set detect_dogs? false
+
+      set response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+
+
+
+      set shape "circle 2"
+      set color red
+      set size 1 / meters-per-patch ; sets size to 1m
+
+
+
+     set levy_time 200
+     set color red
+    ]
+
+    set number-of-traps (number-of-traps + 1)
+end
+
+to remove_trap
+ask trap (count stags + count dogs + count traps - 1)
+  [
+    set breed place-holders
+    ht
+  ]
+  set number-of-traps (number-of-traps - 1)
+
+end
+
+
+to make_trap
+  create-traps 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 1 / meters-per-patch ;1 meter diameter
+
+      set fov-list-traps (list )
+      set fov-list-stags (list )
+;      set fov-list-traps-same (list )
+
+
+      place_traps
+
+
+      set shape "circle 2"
+      set color red
+
+
+      set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+      while [levy_time > (max_levy_time / tick-delta)]
+      [set levy_time round (100 * (1 / (random-gamma 0.5 (.5))))]
+      choose_rand_turn
+      set idiosyncratic_val round (random-normal 0 10)
+
+      set color red
+
+     set coll_angle2 0
+     set detect_stags? false
+     set detect_traps? false
+     set detect_dogs? false
+
+    set response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+    ]
+end
+
+to make_dog
+  create-dogs 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 2 / meters-per-patch;2 meter diameter
+
+
+      set fov-list-traps (list )
+      set fov-list-stags (list )
+      set measured_stag_x-position_list (list )
+      set measured_stag_y-position_list (list )
+      set measured_stag_time_list (list )
+      set predicted_stag_ang-velocity_list (list )
+      set predicted_stag_speed_list (list )
+;      set fov-list-traps-same (list )
+
+
+      let txcor one-of (range (min-pxcor) (max-pxcor) 0.01)
+      let tycor one-of (range (min-pycor) (0) 0.01)
+      setxy txcor tycor
+
+
+      set shape "dog"
+      set color blue
+
+
+      set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+      while [levy_time > (max_levy_time / tick-delta)]
+      [set levy_time round (100 * (1 / (random-gamma 0.5 (.5))))]
+      choose_rand_turn
+      set idiosyncratic_val round (random-normal 0 10)
+
+      set color red
+
+     set coll_angle2 0
+     set detect_stags? false
+     set detect_traps? false
+     set detect_dogs? false
+
+    set response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+    ]
+end
+
+to make_stag
+  create-stags 1
+    [
+      set velocity [0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 90 / meters-per-patch; 90m diameter
+
+      set fov-list-traps (list )
+      set fov-list-stags (list )
+      set fov-list-dogs (list)
+
+      set furthest_ycor min-pycor
+
+    let rand_x random-normal 0 6.5
+
+    if rand_x > max-pxcor
+    [set rand_x (max-pxcor - 0.15)]
+
+    if rand_x < min-pxcor
+    [set rand_x (min-pxcor + 0.15)]
+
+    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+
+     set heading 180
+
+      set shape "boat"
+      set color red
+
+
+
+     set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+     while [levy_time > (max_levy_time / tick-delta)]
+     [set levy_time round (100 * (1 / (random-gamma 0.5 (.5  ))))]
+     choose_rand_turn
+     set idiosyncratic_val round (random-normal 0 10)
+
+     set color red
+     set coll_angle2 0
+
+      set detect_stags? false
+      set detect_traps? false
+      set detect_dogs? false
+
+      set response_type "turn-away"
+    ]
+end
+
+to place_traps; defines region and/or orientation of where the traps should start
+    if trap_setup = "Random - Uniform"
+   [
+      let tycor one-of (range (min-pycor + 1) (0) 0.01)
+      let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.01)
+      setxy txcor tycor
+   ]
+
+  if trap_setup = "Random - Gaussian"
+   [
+      let txcor random-normal 0 6.5
+      let tycor random-normal -10 3.25
+
+      while [txcor > (max-pxcor - 1) or txcor < (min-pxcor + 1)]
+      [set txcor random-normal 0 6.5]
+
+      while [tycor > 0 or tycor < (min-pycor + 1)]
+      [set tycor random-normal -10 3.25]
+
+      setxy txcor tycor
+   ]
+
+  if trap_setup = "Random - Inverse-Gaussian"
+   [
+
+      let txcor abs random-normal 0 6.5
+      let sign one-of [-1 1]
+      set txcor ( sign * (20 - txcor) )
+
+      let tycor abs (random-normal -10 3.25 )
+      let sign1 one-of [-1 1]
+      set tycor -10 + ( sign1 * (10 - tycor) )
+
+      if txcor > (max-pxcor - 1)
+      [set txcor (max-pxcor - .1)]
+
+      if txcor < (min-pxcor + 1)
+      [set txcor (min-pxcor + .1) ]
+
+      if tycor > 0
+      [set tycor 0]
+
+      if tycor < (min-pxcor + 1)
+      [set tycor (min-pycor + .1) ]
+
+
+      setxy txcor tycor
+   ]
+
+
+
+  if trap_setup = "Center Band"
+   [
+     let tycor one-of (range (-10) (0) 0.01)
+     let txcor one-of (range (min-pxcor) (max-pxcor) 0.01)
+
+     setxy txcor tycor
+   ]
+
+  if trap_setup = "Barrier"
+   [
+     let tycor one-of (range (-6) (0) 0.01)
+     let txcor one-of (range (min-pxcor) (max-pxcor) 0.01)
+
+     setxy txcor tycor
+
+     ifelse  heading mod 2 = 0
+       [
+         set heading 90       ]
+       [
+         set heading 270
+       ]
+   ]
+
+
+end
+
+
+to trap_setup_strict; if you want to more precisely place the traps (i.e. trap 2 needs to be at position x, etc.)
+  if trap_setup = "Imperfect Picket"
+   [
+     let j number-of-stags
+     let jc number-of-stags
+
+     while [j < number-of-stags + number-of-traps + number-of-dogs]
+     [ask trap (j )
+       [
+         setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-traps)) - (max-pxcor - min-pxcor) / 2) (0)
+
+        if xcor > min-pxcor and xcor < max-pxcor
+        [
+          setxy (xcor + random-normal 0 0.5) (ycor + random-normal 0 0.5)
+          set heading (0 + random-normal 0 10)
+        ]
+
+         setxy xcor (ycor + 0.01)
+       ]
+       set j j + 1
+     ]
+   ]
+
+  if trap_setup = "Perfect Picket"
+   [
+     let j number-of-stags
+     let jc number-of-stags
+
+     while [j < number-of-stags + number-of-traps + number-of-dogs]
+     [ask trap (j )
+       [
+         setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-traps)) - (max-pxcor - min-pxcor) / 2) (0)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+   ]
+
+end
+
+to dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 needs to be at position x, etc.)
+
+  let j number-of-stags
+  let jc number-of-stags
+
+  while [j < number-of-stags  + number-of-dogs]
+     [ask dog (j )
+       [
+         setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-dogs)) - (max-pxcor - min-pxcor) / 4) (-1)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+
+
+end
+
+
+to clear-paint
+ask patches
+    [
+        ifelse abs(pycor) = max-pycor or abs(pxcor) = max-pxcor
+        [
+          set pcolor red
+        ]
+        [
+          ifelse pycor = (min-pycor + 1 )
+          [set pcolor green]
+          [set pcolor white]
+        ]
+    ]
+end
+
+
+to agent_dynamics
+  ; Reminder, each patch represents 0.1m, these values below are in terms of patches (i.e. 0.25 patches = 0.025m = 2.5cm)
+
+  let body_v_x (item 0 inputs) * sin (item 1 inputs) ; forward speed
+  let body_v_y (item 0 inputs) * -1 * cos( item 1 inputs) ; transversal speed
+  let theta_dot (item 2 inputs) ; turning rate
+  ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise)
+
+  let resultant_v sqrt(body_v_x ^ 2 + body_v_y ^ 2)
+
+  ifelse body_v_x = 0 and body_v_y = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+  [set body_direct heading]
+  [set body_direct atan body_v_y body_v_x]
+
+                                                          ; In traditional coordinates
+  let v_x resultant_v * sin(- body_direct + heading)   ; set v_x resultant_v * cos(- body_direct + heading)
+  let v_y resultant_v * cos(- body_direct + heading )  ; set v_y resultant_v * sin(- body_direct + heading )
+   ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise)
+
+
+  set velocity (list (v_x) (v_y) 0)
+  set angular-velocity (theta_dot)
+end
+
+
+
+to do_collisions
+if count other turtles with [breed != discs and  breed != cues and  breed != waypoints] > 0
+      [
+        let closest-turtle1 (max-one-of place-holders [distance myself])
+
+        if  count traps > 1
+        [
+          ifelse count traps > 3
+          [
+            set closest-turtles (min-n-of 2 other turtles with [breed != discs and breed != cues and  breed != waypoints] [distance myself])
+
+            set closest-turtle1 (min-one-of closest-turtles [distance myself])
+            set closest-turtle2 (max-one-of closest-turtles [distance myself])
+          ]
+          [
+            set closest-turtle1 (min-one-of other turtles with [breed != discs and breed != cues and  breed != waypoints] [distance myself])
+          ]
+        ]
+
+
+        set closest-turtle closest-turtle1
+
+        ifelse (distance closest-turtle ) < (size + ([size] of closest-turtle)) / 2
+           [
+              let xdiff item 0 target-diff
+              let ydiff item 1 target-diff
+
+              if closest-turtle2 != 0
+              [
+                let xdiff2 item 0 target-diff2
+                let ydiff2 item 1 target-diff2
+                set coll_angle2 (rel-bearing2 - (body_direct2))
+                ifelse coll_angle2 < -180
+                  [
+                    set coll_angle2 coll_angle2 + 360
+                   ]
+                  [
+                    ifelse coll_angle2 > 180
+                    [set coll_angle2 coll_angle2 - 360]
+                    [set coll_angle2 coll_angle2]
+                  ]
+              ]
+              set body_direct2 (360 - body_direct)
+              let coll_angle (body_direct2 - rel-bearing); - (90 - heading)); - (body_direct2))
+;              let coll_angle (heading + body_direct2) - (rel-bearing)
+
+
+              if body_direct2 > 180
+              [
+                set body_direct2 (body_direct2 - 360)
+              ]
+
+              ifelse coll_angle < -180
+              [
+                set coll_angle coll_angle + 360
+               ]
+              [
+                ifelse coll_angle > 180
+                [set coll_angle coll_angle - 360]
+                [set coll_angle coll_angle]
+              ]
+
+
+              ifelse abs(coll_angle) < 90
+              [
+                set impact-x  (-1 * item 0 velocity)
+                set impact-y  (-1 * item 1 velocity)
+
+                set stuck_count stuck_count + 1
+              ]
+              [
+               set impact-x 0
+               set impact-y 0
+               set impact-angle 0
+              ]
+
+              if closest-turtle2 != 0
+              [
+                if (distance closest-turtle2 ) < (size + ([size] of closest-turtle)) / 2
+                [
+                   if abs(coll_angle2) < 90
+                   [
+                     set impact-x  (-1 * item 0 velocity)
+                     set impact-y  (-1 * item 1 velocity)
+                   ]
+                ]
+              ]
+
+                ]
+          [
+            set impact-angle 0
+            set impact-x 0
+            set impact-y 0
+          ]
+      ]
+end
+
+to find-stags-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  (ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    member? self stags
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+    member? self dogs
+    [
+      set vision-dd vision-distance-dogs
+    set vision-cc vision-cone-dogs
+    ]
+
+    )
+  set fov-list-stags (list )
+  set i 0
+
+  while [i < (count stags)]
+    [
+      if self != stag ((i )  )
+        [
+          let sub-heading towards stag (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (stag (i )) < (vision-dd / meters-per-patch));
+           [
+             set fov-list-stags fput (stag (i)) fov-list-stags
+           ]
+          ]
+     set i (i + 1)
+    ]
+
+end
+
+to find-dogs-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+  set fov-list-dogs (list )
+  set i (count stags)
+
+
+
+  while [i < (count stags + count dogs )]
+    [
+
+
+      if self != dog ((i )  )
+        [
+          let sub-heading towards dog (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (dog (i )) < (vision-dd / meters-per-patch));
+           [
+             set fov-list-traps fput (dog (i)) fov-list-traps
+           ]
+        ]
+
+     set i (i + 1)
+      ]
+end
+
+to find-traps-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+  set fov-list-traps (list )
+  set i (count stags + count dogs)
+
+
+
+  while [i < (count stags + count dogs + count traps)]
+    [
+
+
+      if self != trap ((i )  )
+        [
+          let sub-heading towards trap (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (trap (i )) < (vision-dd / meters-per-patch));
+           [
+             set fov-list-traps fput (trap (i)) fov-list-traps
+           ]
+        ]
+
+     set i (i + 1)
+      ]
+end
+
+
+
+to paint-patches-in-FOV
+
+  let vision-dd 0
+  let vision-cc 0
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+
+
+  set fov-list-patches (list )
+  set i 0
+
+  set fov-list-patches patches in-cone (vision-dd / meters-per-patch) (vision-cc) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-dd / meters-per-patch))  and pcolor != black]
+
+
+  ask fov-list-patches
+  [
+      ifelse towards myself  > 180
+      [
+        let sub-heading (towards myself - 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+      [
+        let sub-heading (towards myself + 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+
+    let current-closest-trap-distance distance myself
+
+
+     if (real-bearing-patch < ((vision-cc / 2)) and real-bearing-patch > ((-1 * (vision-cc / 2))))
+     [
+      ifelse member? myself traps
+      [
+        set pcolor orange
+;       set pcolor scale-color red current-closest-trap-distance 0 10 ; Adjust range as needed
+      ]
+      [set pcolor yellow]
+     ]
+  ]
+
+end
+
+
+
+
+to-report target-diff  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-turtle
+          [ycor] of closest-turtle)
+        (list
+          xcor
+          ycor))
+
+end
+
+to-report target-diff2  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-turtle2
+          [ycor] of closest-turtle2)
+        (list
+          xcor
+          ycor))
+end
+
+
+to-report rel-bearing
+  let xdiff item 0 target-diff
+  let ydiff item 1 target-diff
+  let angle 0
+
+  let cart-heading (90 - heading)
+
+  ifelse cart-heading < 0
+    [set cart-heading cart-heading + 360]
+    [set cart-heading cart-heading]
+
+  ifelse cart-heading > 180
+    [set cart-heading cart-heading - 360]
+    [set cart-heading cart-heading]
+
+  set angle (atan ydiff xdiff)
+
+
+  let bearing cart-heading - angle
+  if bearing < -180
+    [set bearing bearing + 360]
+  report( bearing )
+end
+
+to-report rel-bearing2
+  let xdiff2 item 0 target-diff2
+  let ydiff2 item 1 target-diff2
+  let angle2 0
+
+  let cart-heading2 (90 - heading)
+
+  ifelse cart-heading2 < 0
+    [set cart-heading2 cart-heading2 + 360]
+    [set cart-heading2 cart-heading2]
+
+  ifelse cart-heading2 > 180
+    [set cart-heading2 cart-heading2 - 360]
+    [set cart-heading2 cart-heading2]
+
+  if xdiff2 != 0 and ydiff2 != 0
+    [set angle2 (atan ydiff2 xdiff2)]
+
+
+  let bearing2 cart-heading2 - angle2
+  if bearing2 < -180
+    [set bearing2 bearing2 + 360]
+  report( bearing2 )
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-837
-66
-1397
-627
+822
+71
+1315
+565
 -1
 -1
-13.463415
+11.3
 1
 10
 1
@@ -92,10 +1969,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-21
+21
+-21
+21
 1
 1
 1
@@ -111,17 +1988,17 @@ seed-no
 seed-no
 1
 150
-2.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-17
-290
-240
-323
+13
+315
+236
+348
 vision-distance-traps
 vision-distance-traps
 0
@@ -133,10 +2010,10 @@ m
 HORIZONTAL
 
 SLIDER
-15
-327
-224
-360
+11
+352
+220
+385
 vision-cone-traps
 vision-cone-traps
 0
@@ -148,10 +2025,10 @@ deg
 HORIZONTAL
 
 SLIDER
-14
-367
-193
-400
+17
+240
+196
+273
 speed-traps
 speed-traps
 0
@@ -163,10 +2040,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-12
-403
-238
-436
+15
+276
+241
+309
 turning-rate-traps
 turning-rate-traps
 0
@@ -302,16 +2179,16 @@ NIL
 1
 
 SLIDER
-19
-250
-204
-283
+18
+202
+203
+235
 number-of-traps
 number-of-traps
 0
-10000
-5700.0
-100
+40
+40.0
+1
 1
 NIL
 HORIZONTAL
@@ -367,7 +2244,7 @@ MONITOR
 1036
 57
 Time of Stag Escaping
-time-to-first-arrival
+time-of-stag-escape
 17
 1
 11
@@ -388,14 +2265,14 @@ sec
 HORIZONTAL
 
 CHOOSER
-16
-191
-214
-236
+21
+148
+219
+193
 selected_algorithm_traps
 selected_algorithm_traps
-"Lie and Wait" "Straight" "Standard Random" "Levy"
-0
+"Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints"
+4
 
 CHOOSER
 251
@@ -503,10 +2380,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-528
-249
-705
-282
+529
+202
+706
+235
 number-of-stags
 number-of-stags
 0
@@ -518,25 +2395,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-516
-286
-735
-319
+521
+343
+740
+376
 vision-distance-stags
 vision-distance-stags
 0
-5000
-400.0
-1000
+4000
+1000.0
+100
 1
 m
 HORIZONTAL
 
 SLIDER
-519
-325
-731
-358
+520
+382
+732
+415
 vision-cone-stags
 vision-cone-stags
 0
@@ -548,10 +2425,10 @@ deg
 HORIZONTAL
 
 SLIDER
-516
-362
-710
-395
+524
+243
+718
+276
 speed-stags
 speed-stags
 0
@@ -563,10 +2440,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-515
-402
-726
-435
+523
+283
+734
+316
 turning-rate-stags
 turning-rate-stags
 0
@@ -578,10 +2455,10 @@ deg/s
 HORIZONTAL
 
 CHOOSER
-514
-190
-722
-235
+517
+150
+725
+195
 selected_algorithm_stag
 selected_algorithm_stag
 "Auto" "Manual Control" "Better-Auto"
@@ -592,8 +2469,8 @@ MONITOR
 13
 1217
 58
-Time of Drugboat Caught
-time-of-first-stag-detected
+Time of Stag Caught
+time-of-stag-caught
 17
 1
 11
@@ -606,7 +2483,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-2
+0
 
 BUTTON
 600
@@ -740,14 +2617,14 @@ for spiral algorithm
 1
 
 SLIDER
-266
-199
-438
-232
+273
+203
+445
+236
 number-of-dogs
 number-of-dogs
 0
-5
+2
 0.0
 1
 1
@@ -755,36 +2632,36 @@ NIL
 HORIZONTAL
 
 SWITCH
-273
-404
-425
+285
+448
 437
+481
 lead_stag?
 lead_stag?
-1
+0
 1
 -1000
 
 SLIDER
-264
-244
-466
-277
+272
+367
+482
+400
 vision-distance-dogs
 vision-distance-dogs
 0
-12000
-1100.0
-1000
+5000
+2500.0
+100
 1
 m
 HORIZONTAL
 
 SLIDER
-264
-282
-456
-315
+272
+409
+464
+442
 vision-cone-dogs
 vision-cone-dogs
 0
@@ -796,10 +2673,10 @@ deg
 HORIZONTAL
 
 SLIDER
-265
-319
-437
-352
+273
+242
+445
+275
 speed-dogs
 speed-dogs
 0
@@ -811,10 +2688,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-265
-356
-474
-389
+273
+279
+482
+312
 turning-rate-dogs
 turning-rate-dogs
 0
@@ -832,9 +2709,9 @@ SLIDER
 63
 meters-per-patch
 meters-per-patch
-100
+50
 1000
-100.0
+250.0
 100
 1
 NIL
@@ -858,6 +2735,49 @@ TEXTBOX
 40 x 40 Patches
 11
 0.0
+1
+
+SWITCH
+276
+332
+454
+365
+dog_local_sensing?
+dog_local_sensing?
+1
+1
+-1000
+
+SLIDER
+13
+398
+199
+431
+trap_travel_range
+trap_travel_range
+0
+2000
+2000.0
+1000
+1
+m
+HORIZONTAL
+
+BUTTON
+678
+28
+788
+61
+Set Waypoint
+set_waypoint
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
 1
 
 @#$#@#$#@
@@ -1334,7 +3254,7 @@ NetLogo 6.4.0
     <go>go</go>
     <timeLimit steps="6000"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>win-loss-ratio</metric>
+    <metric>win-loss-val</metric>
     <enumeratedValueSet variable="Trap_Setup">
       <value value="&quot;Random - Uniform&quot;"/>
       <value value="&quot;Random - Gaussian&quot;"/>
@@ -1348,7 +3268,7 @@ NetLogo 6.4.0
     <go>go</go>
     <timeLimit steps="6000"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>win-loss-ratio</metric>
+    <metric>win-loss-val</metric>
     <enumeratedValueSet variable="Trap_Setup">
       <value value="&quot;Random - Uniform&quot;"/>
       <value value="&quot;Random - Gaussian&quot;"/>
