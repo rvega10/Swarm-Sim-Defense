@@ -500,17 +500,21 @@ to stag_procedure
          set response_duration_count 1;
        ]
        [
-         ifelse stuck_count > 100 ; checks to see if agent is stuck (e.g. against a wall) for 100 ticks
+         ifelse ticks mod 3000 = 0 ; every 3000 ticks (300 seconds) the stag decides whether it should turn randomly
            [
-            set response_type "90-in-place"
-            set response_duration_count (1 / tick-delta)
-            set stuck_count 0
-           ]
+             if random 100 < 0 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
+             [
+              choose_rand_turn
+              set response_type "Random Turn"
+              set response_duration_count (60 / tick-delta) ;perform response type for 10 second
+             ]
+             ]
            [
              ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
               go_to_south_goal
               set color orange
            ]
+
        ]
    ]
 
@@ -994,9 +998,11 @@ to follow_waypoints
      set target_y ycor
    ]
 
-   let target_bearing towardsxy (target_x) (target_y) - heading
 
-   let target_dist distance target
+
+   let target_bearing (towardsxy (target_x) (ycor)) - heading
+
+   let target_dist distancexy (target_x) (ycor)
 
    ifelse target_dist > 7 / meters-per-patch ; if the waypoint is within 7 meters (less than half of the stag width), the traps should stop
    [
@@ -1099,6 +1105,11 @@ to response_procedure
         set inputs (list (0) 90 0)
       ]
 
+    if response_type = "Random Turn"
+      [
+        set inputs (list (speed-w-noise) 90 rand_turn)
+      ]
+
 
     if response_type = "towards-target"
     [
@@ -1129,6 +1140,11 @@ to choose_rand_turn
       set turning-rate-val turning-rate-rw
     ]
 
+  if member? self stags
+    [
+      set turning-rate-val turning-rate-stags
+    ]
+
   if distribution_for_direction = "uniform"
   [set rand_turn (- turning-rate-val) + (random (2 * turning-rate-val + 1)) ]
 
@@ -1140,7 +1156,7 @@ to choose_rand_turn
 end
 
 
-to  set_actuating_variables
+to set_actuating_variables
   if ticks mod 1 = 0
   [
     set rand-x random-normal 0 state-disturbance_xy
@@ -2026,7 +2042,7 @@ seed-no
 seed-no
 1
 150
-7.0
+17.0
 1
 1
 NIL
@@ -2225,7 +2241,7 @@ number-of-traps
 number-of-traps
 0
 40
-10.0
+40.0
 1
 1
 NIL
@@ -2521,7 +2537,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-1
+0
 
 BUTTON
 600
@@ -2836,7 +2852,7 @@ SWITCH
 112
 dynamic_waypoint?
 dynamic_waypoint?
-0
+1
 1
 -1000
 
@@ -2848,9 +2864,9 @@ SLIDER
 update_time
 update_time
 0
-30
-30.0
-1
+300
+45.0
+15
 1
 sec
 HORIZONTAL
