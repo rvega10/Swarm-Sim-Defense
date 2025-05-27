@@ -305,6 +305,11 @@ to go
     ]
 
 
+  if dynamic_waypoint?
+  [
+    update_waypoint
+  ]
+
   measure_results
 
   if end_flag = 1 ; if any of the end conditions are met (stag escapes, stag is caught) it halts the simulation
@@ -683,7 +688,7 @@ to intercept
     let target-cue min-one-of cues [abs(distance stag 0 - distance myself)]
     ask target-cue
     [set color blue]
-    ifelse distance min-one-of cues [distance myself] < (predicted_stag_speed * meters-per-patch)
+    ifelse distance min-one-of cues [distance myself] < (0.5 * predicted_stag_speed * meters-per-patch)
     [
       set target_bearing (towards min-one-of stags [distance myself]) - heading
     ]
@@ -980,25 +985,44 @@ to follow_waypoints
 
   if count waypoints > 0
   [
-  let target (min-one-of waypoints [distance myself] )
+   let target (min-one-of waypoints [distance myself] )
+   let target_y [ycor] of target
+   let target_x [xcor] of target
 
-  let target_bearing towards target - heading
+   if target_y > ycor
+   [
+     set target_y ycor
+   ]
 
-  ifelse target_bearing < -180
-    [
-      set target_bearing target_bearing + 360
+   let target_bearing towardsxy (target_x) (target_y) - heading
+
+   let target_dist distance target
+
+   ifelse target_dist > 7 / meters-per-patch ; if the waypoint is within 7 meters (less than half of the stag width), the traps should stop
+   [
+     ifelse target_bearing < -180
+     [
+       set target_bearing target_bearing + 360
+      ]
+     [
+       ifelse target_bearing > 180
+       [set target_bearing target_bearing - 360]
+       [set target_bearing target_bearing]
      ]
-    [
-      ifelse target_bearing > 180
-      [set target_bearing target_bearing - 360]
-      [set target_bearing target_bearing]
-    ]
 
 
-  ifelse (target_bearing) > 0
-    [set inputs (list (speed-w-noise) 90 turning-w-noise)]
-    [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
-    ]
+    ifelse (target_bearing) > 0
+      [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+      [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+   ]
+   [
+     set inputs (list 0 90 0)
+   ]
+
+
+  ]
+
+
 end
 
 to set_waypoint
@@ -1018,7 +1042,15 @@ to set_waypoint
 
 end
 
-
+to update_waypoint
+  if ticks mod (update_time / tick-delta) = 0
+  [
+    ask waypoints
+    [
+     setxy ([xcor] of stag 0) (([ycor] of stag 0 + min-pycor) / 2)
+    ]
+  ]
+end
 ;
 ;
 ;-------------- Nested functions and Setup Procedures below--------------
@@ -1162,9 +1194,10 @@ to update_agent_state
    set distance_traveled (distance_traveled + (item 0 inputs) * meters-per-patch * tick-delta)
 
 
-
-;   do_collisions ;; temporarly removed collisions between defense to speed up sims
-
+   if breed != stags
+   [
+     do_collisions ;; temporarly removed collisions between defense to speed up sims
+   ]
 
   let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
   let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
@@ -1958,10 +1991,10 @@ to-report rel-bearing2
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-822
-71
-1315
-565
+914
+70
+1407
+564
 -1
 -1
 11.3
@@ -1993,7 +2026,7 @@ seed-no
 seed-no
 1
 150
-10.0
+7.0
 1
 1
 NIL
@@ -2037,8 +2070,8 @@ SLIDER
 speed-traps
 speed-traps
 0
-5
-5.0
+10
+3.0
 0.5
 1
 m/s
@@ -2192,7 +2225,7 @@ number-of-traps
 number-of-traps
 0
 40
-40.0
+10.0
 1
 1
 NIL
@@ -2244,10 +2277,10 @@ NIL
 1
 
 MONITOR
-851
-12
-1036
-57
+943
+11
+1128
+56
 Time of Stag Escaping
 time-of-stag-escape
 17
@@ -2423,7 +2456,7 @@ vision-cone-stags
 vision-cone-stags
 0
 360
-360.0
+90.0
 10
 1
 deg
@@ -2470,10 +2503,10 @@ selected_algorithm_stag
 0
 
 MONITOR
-1047
-13
-1217
-58
+1139
+12
+1309
+57
 Time of Stag Caught
 time-of-stag-caught
 17
@@ -2488,7 +2521,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-0
+1
 
 BUTTON
 600
@@ -2656,7 +2689,7 @@ vision-distance-dogs
 vision-distance-dogs
 0
 5000
-2500.0
+5000.0
 100
 1
 m
@@ -2733,10 +2766,10 @@ Scales Simulation
 1
 
 TEXTBOX
-1224
-29
-1374
-47
+1316
+28
+1466
+46
 40 x 40 Patches
 11
 0.0
@@ -2795,6 +2828,32 @@ auto_set?
 0
 1
 -1000
+
+SWITCH
+735
+79
+888
+112
+dynamic_waypoint?
+dynamic_waypoint?
+0
+1
+-1000
+
+SLIDER
+759
+126
+893
+159
+update_time
+update_time
+0
+30
+30.0
+1
+1
+sec
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -3313,7 +3372,7 @@ NetLogo 6.4.0
   <experiment name="scoring_only_traps_waypoints" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="6000"/>
+    <timeLimit steps="14500"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
     <metric>win-loss-val</metric>
     <enumeratedValueSet variable="selected_algorithm_traps">
@@ -3324,8 +3383,8 @@ NetLogo 6.4.0
       <value value="&quot;Random - Gaussian&quot;"/>
       <value value="&quot;Random - Inverse-Gaussian&quot;"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+    <steppedValueSet variable="number-of-traps" first="2" step="2" last="40"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="100"/>
   </experiment>
 </experiments>
 @#$#@#$#@
