@@ -265,6 +265,11 @@ to setup
   ]
 
 
+  if auto_set? and count waypoints = 0
+  [
+    set_waypoint
+  ]
+
   set-default-shape discs "ring"
 
   reset-ticks
@@ -2764,10 +2769,10 @@ m
 HORIZONTAL
 
 BUTTON
-678
-28
-788
-61
+599
+25
+709
+58
 Set Waypoint
 set_waypoint
 NIL
@@ -2779,6 +2784,17 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+714
+26
+830
+59
+auto_set?
+auto_set?
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -3292,6 +3308,23 @@ NetLogo 6.4.0
       <value value="3162"/>
       <value value="5623"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+  </experiment>
+  <experiment name="scoring_only_traps_waypoints" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="6000"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>win-loss-val</metric>
+    <enumeratedValueSet variable="selected_algorithm_traps">
+      <value value="&quot;Follow Waypoints&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Trap_Setup">
+      <value value="&quot;Random - Uniform&quot;"/>
+      <value value="&quot;Random - Gaussian&quot;"/>
+      <value value="&quot;Random - Inverse-Gaussian&quot;"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
