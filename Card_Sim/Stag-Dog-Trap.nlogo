@@ -512,7 +512,7 @@ to stag_procedure
            [
              ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
               go_to_south_goal
-              set color orange
+              set color red
            ]
 
        ]
@@ -854,6 +854,9 @@ to select_alg_procedure
   if selected_algorithm_traps = "Follow Waypoints"
   [follow_waypoints]
 
+  if selected_algorithm_traps = "Follow Waypoints - Horizontally"
+  [follow_waypoints_horizontally]
+
 end
 
 ; stag algorithm - - - - - - - - - - -
@@ -993,6 +996,47 @@ to follow_waypoints
    let target_y [ycor] of target
    let target_x [xcor] of target
 
+
+
+
+   let target_bearing (towards target) - heading
+
+   let target_dist distance target
+
+   ifelse target_dist > 7 / meters-per-patch ; if the waypoint is within 7 meters (less than half of the stag width), the traps should stop
+   [
+     ifelse target_bearing < -180
+     [
+       set target_bearing target_bearing + 360
+      ]
+     [
+       ifelse target_bearing > 180
+       [set target_bearing target_bearing - 360]
+       [set target_bearing target_bearing]
+     ]
+
+
+    ifelse (target_bearing) > 0
+      [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+      [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+   ]
+   [
+     set inputs (list 0 90 0)
+   ]
+
+
+  ]
+
+end
+
+to follow_waypoints_horizontally
+
+  if count waypoints > 0
+  [
+   let target (min-one-of waypoints [distance myself] )
+   let target_y [ycor] of target
+   let target_x [xcor] of target
+
    if target_y > ycor
    [
      set target_y ycor
@@ -1028,9 +1072,7 @@ to follow_waypoints
 
   ]
 
-
 end
-
 to set_waypoint
 
   ask place-holder ((count stags + count traps + count dogs + count waypoints))
@@ -1042,7 +1084,7 @@ to set_waypoint
 
 
       set shape "x"
-      set color red
+      set color orange
       set size 100 / meters-per-patch ; sets size to 10m
     ]
 
@@ -1308,7 +1350,7 @@ to make_trap
 
 
       set shape "circle 2"
-      set color red
+      set color green
 
 
       set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
@@ -1317,7 +1359,7 @@ to make_trap
       choose_rand_turn
       set idiosyncratic_val round (random-normal 0 10)
 
-      set color red
+
 
      set coll_angle2 0
      set detect_stags? false
@@ -1404,8 +1446,6 @@ to make_stag
      set heading 180
 
       set shape "boat"
-      set color red
-
 
 
      set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
@@ -2042,7 +2082,7 @@ seed-no
 seed-no
 1
 150
-17.0
+11.0
 1
 1
 NIL
@@ -2241,7 +2281,7 @@ number-of-traps
 number-of-traps
 0
 40
-40.0
+5.0
 1
 1
 NIL
@@ -2321,11 +2361,11 @@ HORIZONTAL
 CHOOSER
 21
 148
-219
+264
 193
 selected_algorithm_traps
 selected_algorithm_traps
-"Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints"
+"Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints" "Follow Waypoints - Horizontally"
 4
 
 CHOOSER
@@ -2865,7 +2905,7 @@ update_time
 update_time
 0
 300
-45.0
+60.0
 15
 1
 sec
@@ -3394,13 +3434,14 @@ NetLogo 6.4.0
     <enumeratedValueSet variable="selected_algorithm_traps">
       <value value="&quot;Follow Waypoints&quot;"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="speed-traps" first="3" step="1" last="5"/>
     <enumeratedValueSet variable="Trap_Setup">
       <value value="&quot;Random - Uniform&quot;"/>
       <value value="&quot;Random - Gaussian&quot;"/>
       <value value="&quot;Random - Inverse-Gaussian&quot;"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="number-of-traps" first="2" step="2" last="40"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="100"/>
+    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
 @#$#@#$#@
