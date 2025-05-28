@@ -165,6 +165,7 @@ stags-own [
            fov-list-patches
            fov-list-dogs
            distance_traveled
+           stag_target
           ]
 
 patches-own [
@@ -500,20 +501,23 @@ to stag_procedure
          set response_duration_count 1;
        ]
        [
-         ifelse ticks mod 3000 = 0 ; every 3000 ticks (300 seconds) the stag decides whether it should turn randomly
-           [
-             if random 100 < 0 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
-             [
-              choose_rand_turn
-              set response_type "Random Turn"
-              set response_duration_count (60 / tick-delta) ;perform response type for 10 second
-             ]
-             ]
-           [
-             ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
-              go_to_south_goal
-              set color red
-           ]
+
+          ifelse ticks mod 1200 = 0 ; every 1200 ticks (120 seconds) the stag is "affected" by wind, changing its heading slightly
+            [
+              if random 100 < 50 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
+              [
+               choose_rand_turn
+               set response_type "Random Turn"
+               set response_duration_count (60 / tick-delta) ;perform response type for 10 second
+              ]
+            ]
+            [
+            ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
+             go_to_south_goal
+             set color red
+            ]
+
+
 
        ]
    ]
@@ -861,7 +865,23 @@ end
 
 ; stag algorithm - - - - - - - - - - -
 to go_to_south_goal ; stag attempts to drive its heading towards the south end of the environment
-   let target_bearing 180 - heading
+
+   ifelse shifting_stag_target?
+   [
+     if ticks mod 600 = 0 ; every 3000 ticks (300 seconds) the stag's target is moved slightly at random to mix up approach
+     [set stag_target (list (xcor + (one-of (range (-1) (2) 1)) * (150 / meters-per-patch)) min-pycor) ]
+   ]
+   [
+     set stag_target (list xcor min-pycor)
+   ]
+
+;   set stag_target (list xcor min-pycor)
+
+   let stag_target_x item 0 stag_target
+   let stag_target_y item 1 stag_target
+
+
+   let target_bearing towardsxy stag_target_x stag_target_y - heading
 
       ifelse target_bearing < -180
         [
@@ -1201,8 +1221,8 @@ end
 to set_actuating_variables
   if ticks mod 1 = 0
   [
-    set rand-x random-normal 0 state-disturbance_xy
-    set rand-y random-normal 0 state-disturbance_xy
+    set rand-x random-normal 0 (state-disturbance_xy / meters-per-patch)
+    set rand-y random-normal 0 (state-disturbance_xy / meters-per-patch)
     set rand-head-distrbuance random-normal 0 state-disturbance_head
   ]
 
@@ -1462,6 +1482,8 @@ to make_stag
       set detect_dogs? false
 
       set response_type "turn-away"
+
+      set stag_target (list xcor min-pycor)
     ]
 end
 
@@ -2082,7 +2104,7 @@ seed-no
 seed-no
 1
 150
-11.0
+56.0
 1
 1
 NIL
@@ -2281,7 +2303,7 @@ number-of-traps
 number-of-traps
 0
 40
-5.0
+2.0
 1
 1
 NIL
@@ -2366,7 +2388,7 @@ CHOOSER
 selected_algorithm_traps
 selected_algorithm_traps
 "Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints" "Follow Waypoints - Horizontally"
-4
+5
 
 CHOOSER
 251
@@ -2892,7 +2914,7 @@ SWITCH
 112
 dynamic_waypoint?
 dynamic_waypoint?
-1
+0
 1
 -1000
 
@@ -2903,13 +2925,24 @@ SLIDER
 159
 update_time
 update_time
-0
+5
 300
-60.0
-15
+5.0
+5
 1
 sec
 HORIZONTAL
+
+SWITCH
+732
+205
+896
+238
+shifting_stag_target?
+shifting_stag_target?
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
