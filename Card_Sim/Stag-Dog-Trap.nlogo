@@ -6,6 +6,7 @@ extensions [palette
 breed [ traps trap]
 breed [ stags stag]
 breed [ dogs dog]
+breed [ old-dogs old-dog]
 breed [cues cue]
 breed [discs disc]
 breed[ place-holders place-holder]
@@ -52,9 +53,11 @@ traps-own [
            coll_angle2
            response_type
            fov-list-traps
+           fov-list-traps-beacon
            detect_traps?
            detect_stags?
            detect_dogs?
+           detect_old-dogs?
            fov-list-stags
            stuck_count
            idiosyncratic_val
@@ -71,6 +74,7 @@ traps-own [
            fov-list-traps-other1
            fov-list-traps-other2
            fov-list-dogs
+           fov-list-old-dogs
           ]
 dogs-own [
           velocity
@@ -99,6 +103,7 @@ dogs-own [
            detect_traps?
            detect_stags?
            detect_dogs?
+           detect_old-dogs?
            fov-list-stags
            stuck_count
            idiosyncratic_val
@@ -115,6 +120,63 @@ dogs-own [
            fov-list-traps-other1
            fov-list-traps-other2
            fov-list-dogs
+           fov-list-old-dogs
+           measured_stag_x-position_list
+           measured_stag_y-position_list
+           measured_stag_time_list
+           predicted_stag_heading
+           predicted_stag_speed
+           predicted_stag_ang-velocity
+           old_predicted_stag_heading
+           predicted_stag_speed_list
+           predicted_stag_ang-velocity_list
+          ]
+
+old-dogs-own [
+          velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           true_velocity
+           V
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           speed-w-noise
+           turning-w-noise
+           levy_time
+           rand_turn
+           step_count
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           response_type
+           fov-list-traps
+           detect_traps?
+           detect_stags?
+           detect_dogs?
+           detect_old-dogs?
+           fov-list-stags
+           stuck_count
+           idiosyncratic_val
+           response_duration_count
+           rand-head-distrbuance
+           distance_traveled
+           fov-list-patches
+           stag_caught_flag
+           temp-turning-val
+           random_switch-timer
+           alternating_procedure_val
+           fov-list-traps-same1
+           fov-list-traps-same2
+           fov-list-traps-other1
+           fov-list-traps-other2
+           fov-list-dogs
+           fov-list-old-dogs
            measured_stag_x-position_list
            measured_stag_y-position_list
            measured_stag_time_list
@@ -158,12 +220,14 @@ stags-own [
            detect_stags?
            detect_dogs?
            detect_traps?
+           detect_old-dogs?
            stuck_count
            idiosyncratic_val
            furthest_ycor
            response_duration_count
            fov-list-patches
            fov-list-dogs
+           fov-list-old-dogs
            distance_traveled
            stag_target
           ]
@@ -175,6 +239,8 @@ patches-own [
 
 discs-own [
             age
+            my_turtle
+            place
           ]
 
 cues-own [
@@ -209,6 +275,7 @@ to setup
   ; create the set number of agents according to sliders in interface tab
   repeat number-of-stags [make_stag]
   repeat number-of-dogs [make_dog]
+  repeat number-of-old-dogs [make_old-dog]
   repeat number-of-traps [make_trap]
 
 
@@ -219,11 +286,19 @@ to setup
     set detect_stags? false
     set detect_traps? false
     set detect_dogs? true
+    set detect_old-dogs? true
   ]
 
   ask dogs
   [
-    ; set whether or not the trap can detect specific types of agents
+    ; set whether or not the dog can detect specific types of agents
+    set detect_traps? false
+    set detect_stags? true
+  ]
+
+  ask old-dogs
+  [
+    ; set whether or not the old-dog can detect specific types of agents
     set detect_traps? false
     set detect_stags? true
   ]
@@ -241,9 +316,15 @@ to setup
   ; position traps and dogs according to selection in drop down choosers in interface tab
   trap_setup_strict
   dog_setup_strict
+  old-dog_setup_strict
 
 
-
+;  ask trap 1
+;  [
+;    setxy 0 0
+;    set size 2
+;    set heading 45
+;  ]
 
   ; adds extra "ghost" turtles that make adding and removing agents during simulation  easier
   create-place-holders 25
@@ -265,6 +346,14 @@ to setup
     ht
   ]
 
+
+  if beacon_sensors?
+  [
+    ask traps
+    [
+     make_initial_beacon_sensing_display
+    ]
+  ]
 
   if auto_set? and count waypoints = 0
   [
@@ -305,6 +394,12 @@ to go
       dog_procedure
     ]
 
+  ask old-dogs
+    [
+      old-dog_procedure
+    ]
+
+
 
   if dynamic_waypoint?
   [
@@ -334,15 +429,17 @@ to background_procedures
 
 ifelse paint_fov?
   [
-    ask discs ; removes older discs to keep FOV display current
-      [
-         set age age + 1
-         if age = 1 [ die ]
-      ]
+;    ask discs ; removes older discs to keep FOV display current
+;      [
+;         set age age + 1
+;         if age = 1 [ die ]
+;      ]
 
     ask traps
       [
-        display_FOV
+        ifelse beacon_sensors?
+        [beacon_sensing_display]
+        [display_FOV]
       ]
 
     ask stags
@@ -354,9 +451,15 @@ ifelse paint_fov?
       [
         display_FOV
       ]
+
+    ask old-dogs
+      [
+        display_FOV
+      ]
   ]
   [
-    ask discs [die]
+    ask discs [ht]
+;    ask discs [die]
   ]
 
   ifelse draw_path?
@@ -364,11 +467,13 @@ ifelse paint_fov?
     ask stags [pd]
     ask traps [pd]
     ask dogs [pd]
+    ask old-dogs [pd]
   ]
   [
     ask stags [pu]
     ask traps [pu]
     ask dogs [pu]
+    ask old-dogs [pu]
   ]
 end
 
@@ -392,72 +497,100 @@ to display_FOV ;procedure that uses fake agents to display FOV rather than paint
       set vision-dd vision-distance-dogs
       set vision-cc vision-cone-dogs
     ]
+  member? self old-dogs
+    [
+      ifelse old-dog-algorithm = "Intercept"
+      [
+        set vision-dd vision-distance-dogs
+        set vision-cc vision-cone-dogs
+      ]
+      [
+        set vision-dd 0
+        set vision-cc vision-cone-dogs
+      ]
+    ]
 
   )
 
-  (ifelse vision-cc = 360
-    [
-      hatch-discs 1
+  if count discs with [my_turtle = [who] of myself] = 0
+  [
+    (ifelse vision-cc = 360
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    vision-cc = 180
-    [
-      hatch-discs 1
+      vision-cc = 180
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        set shape "180-deg-fov"
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          set shape "180-deg-fov"
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    vision-cc = 90
-    [
-      hatch-discs 1
+      vision-cc = 90
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        set shape "90-deg-fov"
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          set shape "90-deg-fov"
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    vision-cc = 45
-    [
-      hatch-discs 1
+      vision-cc = 45
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        set shape "45-deg-fov"
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          set shape "45-deg-fov"
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    vision-cc = 60
-    [
-      hatch-discs 1
+      vision-cc = 60
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        set shape "60-deg-fov"
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          set shape "60-deg-fov"
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    vision-cc = 30
-    [
-      hatch-discs 1
+      vision-cc = 30
       [
-        set size 2 * (vision-dd / meters-per-patch)
-        set heading ([heading] of myself)
-        set shape "30-deg-fov"
-        palette:set-transparency 50
+        hatch-discs 1
+        [
+          set size 2 * (vision-dd / meters-per-patch)
+          set heading ([heading] of myself)
+          set shape "30-deg-fov"
+          palette:set-transparency 70
+          set my_turtle  [who] of myself
+        ]
       ]
-    ]
-    [
-      paint-patches-in-FOV
-    ]
-  )
+      [
+        paint-patches-in-FOV
+      ]
+    )
+  ]
+
+  ask discs with [my_turtle = [who] of myself]
+  [
+    setxy ([xcor] of myself) ([ycor] of myself)
+   set heading ([heading] of myself)
+    st
+  ]
 
 end
 
@@ -471,7 +604,7 @@ to measure_results
 
     if time-of-stag-caught = 0
     [
-      if count traps with [stag_caught_flag = 1] > 0 or count dogs with [stag_caught_flag = 1] > 0
+      if count traps with [stag_caught_flag = 1] > 0 or count dogs with [stag_caught_flag = 1] > 0 or count old-dogs with [stag_caught_flag = 1] > 0
       [set time-of-stag-caught ticks]
     ]
 
@@ -495,27 +628,27 @@ to stag_procedure
       set color red
     ]
     [
-     ifelse length fov-list-traps > 0  or length fov-list-dogs > 0; if one or more traps/dogs are detected, it reacts according to whatever the selected algorithm is (default is to turn away)
+     ifelse length fov-list-traps > 0  or length fov-list-dogs > 0 or length fov-list-old-dogs > 0; if one or more traps/dogs are detected, it reacts according to whatever the selected algorithm is (default is to turn away)
        [
          set response_type "turn-away"
          set response_duration_count 1;
        ]
        [
 
-          ifelse ticks mod 1200 = 0 ; every 1200 ticks (120 seconds) the stag is "affected" by wind, changing its heading slightly
-            [
-              if random 100 < 50 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
-              [
-               choose_rand_turn
-               set response_type "Random Turn"
-               set response_duration_count (60 / tick-delta) ;perform response type for 10 second
-              ]
-            ]
-            [
+;          ifelse ticks mod 1200 = 0 ; every 1200 ticks (120 seconds) the stag is "affected" by wind, changing its heading slightly
+;            [
+;              if random 100 < 50 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
+;              [
+;               choose_rand_turn
+;               set response_type "Random Turn"
+;               set response_duration_count (60 / tick-delta) ;perform response type for 10 second
+;              ]
+;            ]
+;            [
             ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
              go_to_south_goal
              set color red
-            ]
+;            ]
 
 
 
@@ -562,6 +695,9 @@ to trap_procedure
 
  check_if_touching_stag
 
+ if beacon_sensors?
+  [update_beacon_sensor_location]
+
 end
 
 to dog_procedure
@@ -571,6 +707,29 @@ to dog_procedure
 
 
   intercept
+
+ update_agent_state; updates states of agents (i.e. position and heading)
+
+ check_if_touching_stag
+
+end
+
+to old-dog_procedure
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+  set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+
+  (ifelse old-dog-algorithm = "Intercept"
+    [ intercept]
+   old-dog-algorithm = "Follow Waypoints"
+    [follow_waypoints]
+   old-dog-algorithm = "Follow Waypoints - Horizontally"
+    [follow_waypoints_horizontally]
+   old-dog-algorithm = "Decoy"
+    [decoy]
+   )
+
 
  update_agent_state; updates states of agents (i.e. position and heading)
 
@@ -743,9 +902,9 @@ end
 
 to place-cues
 
-  set i (count stags + count traps + count dogs + count place-holders + count waypoints)
+  set i (count stags + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
 
-  let max_i (count stags + count traps + count dogs + count place-holders + count waypoints)
+  let max_i (count stags + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
 
   let current-x last measured_stag_x-position_list
   let current-y last measured_stag_y-position_list
@@ -754,7 +913,7 @@ to place-cues
   let predicted_speed mean predicted_stag_speed_list
   let predicted_ang-velocity mean predicted_stag_ang-velocity_list
 
-  while [i < (count stags + count traps + count dogs + count place-holders + count cues + count waypoints)]
+  while [i < (count stags + count traps + count dogs + count old-dogs + count place-holders + count cues + count waypoints)]
     [
       ask cue i
       [
@@ -778,8 +937,8 @@ to place-cues
 
 
         set cue-heading current-heading + (predicted_ang-velocity * meters-per-patch * (i - max_i + 1))
-        set cue-x x_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * sin(cue-heading - 90)) ;* 100 * (i - (count stags + count traps + count dogs) + 1)) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
-        set cue-y y_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * cos(cue-heading - 90) );* 100 * (i - (count stags + count traps + count dogs) + 1))
+        set cue-x x_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * sin(cue-heading - 90)) ;* 100 * (i - (count stags + count traps + count dogs + count old-dogs) + 1)) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
+        set cue-y y_c + ((predicted_speed / (predicted_ang-velocity * pi / 180)) * cos(cue-heading - 90) );* 100 * (i - (count stags + count traps + count dogs + count old-dogs) + 1))
         ]
 
 
@@ -1093,9 +1252,13 @@ to follow_waypoints_horizontally
   ]
 
 end
+
+to decoy
+  set inputs (list 0 90 0)
+end
 to set_waypoint
 
-  ask place-holder ((count stags + count traps + count dogs + count waypoints))
+  ask place-holder ((count stags + count traps + count dogs + count old-dogs + count waypoints))
   [  set breed waypoints
       st
       setxy ([xcor] of stag 0) 0
@@ -1136,7 +1299,14 @@ to response_procedure
     [
       if breed = stags
       [
-        set hostile min-one-of dogs [distance myself]
+
+        let total_list sentence fov-list-dogs fov-list-old-dogs
+
+        if length total_list > 0
+        [
+          set hostile min-one-of turtle-set map [b -> b] total_list [distance myself]
+        ]
+
       ]
       let hostile_bearing towards hostile - heading
 
@@ -1246,6 +1416,13 @@ to set_actuating_variables
     set turning-w-noise random-normal (turning-rate-dogs) noise-actuating-turning
 
   ]
+  member? self old-dogs
+  [
+
+    set speed-w-noise random-normal (speed-old-dogs / meters-per-patch) (noise-actuating-speed)
+    set turning-w-noise random-normal (turning-rate-dogs) noise-actuating-turning
+
+  ]
   )
 end
 
@@ -1262,6 +1439,10 @@ to do_sensing
   ifelse detect_dogs?
     [find-dogs-in-FOV ]
     [set fov-list-dogs (list)]
+
+  ifelse detect_old-dogs?
+    [find-old-dogs-in-FOV ]
+    [set fov-list-old-dogs (list)]
 
 end
 
@@ -1306,7 +1487,7 @@ end
 
 
 to add_trap
-  ask place-holder ((count stags + count traps + count dogs))
+  ask place-holder ((count stags + count traps + count dogs + count old-dogs))
   [  set breed traps
       st
       setxy 0.3 0
@@ -1317,6 +1498,7 @@ to add_trap
       set angular-velocity 0
       set inputs [0 0 0]
       set fov-list-traps (list )
+      set fov-list-traps-beacon (list )
       set fov-list-stags (list )
 
       set detect_stags? false
@@ -1343,7 +1525,7 @@ to add_trap
 end
 
 to remove_trap
-ask trap (count stags + count dogs + count traps - 1)
+ask trap (count stags + count dogs + count old-dogs + count traps - 1)
   [
     set breed place-holders
     ht
@@ -1362,6 +1544,7 @@ to make_trap
       set size 1 / meters-per-patch ;1 meter diameter
 
       set fov-list-traps (list )
+      set fov-list-traps-beacon (list )
       set fov-list-stags (list )
 ;      set fov-list-traps-same (list )
 
@@ -1385,6 +1568,7 @@ to make_trap
      set detect_stags? false
      set detect_traps? false
      set detect_dogs? false
+     set detect_old-dogs? false
 
     set response_type "turn-away"
 
@@ -1417,7 +1601,7 @@ to make_dog
 
 
       set shape "dog"
-      set color blue
+
 
 
       set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
@@ -1432,6 +1616,54 @@ to make_dog
      set detect_stags? false
      set detect_traps? false
      set detect_dogs? false
+     set detect_old-dogs? false
+
+    set response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+    ]
+end
+
+to make_old-dog
+  create-old-dogs 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 2 / meters-per-patch;2 meter diameter
+
+
+      set fov-list-traps (list )
+      set fov-list-stags (list )
+      set measured_stag_x-position_list (list )
+      set measured_stag_y-position_list (list )
+      set measured_stag_time_list (list )
+      set predicted_stag_ang-velocity_list (list )
+      set predicted_stag_speed_list (list )
+;      set fov-list-traps-same (list )
+
+
+      let txcor one-of (range (min-pxcor) (max-pxcor) 0.01)
+      let tycor one-of (range (min-pycor) (0) 0.01)
+      setxy txcor tycor
+
+
+      set shape "dog"
+      set color violet
+
+
+      set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+      while [levy_time > (max_levy_time / tick-delta)]
+      [set levy_time round (100 * (1 / (random-gamma 0.5 (.5))))]
+      choose_rand_turn
+      set idiosyncratic_val round (random-normal 0 10)
+
+
+     set coll_angle2 0
+     set detect_stags? false
+     set detect_traps? false
+     set detect_dogs? false
+     set detect_old-dogs? false
 
     set response_type "turn-away"
 
@@ -1480,6 +1712,7 @@ to make_stag
       set detect_stags? false
       set detect_traps? false
       set detect_dogs? false
+      set detect_old-dogs? false
 
       set response_type "turn-away"
 
@@ -1618,6 +1851,27 @@ to dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 ne
      [ask dog (j )
        [
          setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-dogs)) - (max-pxcor - min-pxcor) / 4) (-1)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+
+
+end
+
+to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 needs to be at position x, etc.)
+
+  let j number-of-stags + number-of-dogs
+  let jc number-of-stags + number-of-dogs
+
+  while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
+     [ask old-dog (j )
+       [
+         setxy ((j - jc) * -1 * (((max-pxcor - min-pxcor) / number-of-old-dogs)) + (max-pxcor - min-pxcor) / 4) (-1)
 
         set heading 0
 
@@ -1792,6 +2046,11 @@ to find-stags-in-FOV
       set vision-dd vision-distance-dogs
     set vision-cc vision-cone-dogs
     ]
+    member? self old-dogs
+    [
+      set vision-dd vision-distance-dogs
+    set vision-cc vision-cone-dogs
+    ]
 
     )
   set fov-list-stags (list )
@@ -1864,7 +2123,56 @@ to find-dogs-in-FOV
 
           if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (dog (i )) < (vision-dd / meters-per-patch));
            [
-             set fov-list-traps fput (dog (i)) fov-list-traps
+             set fov-list-dogs fput (dog (i)) fov-list-dogs
+           ]
+        ]
+
+     set i (i + 1)
+      ]
+end
+
+to find-old-dogs-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+  set fov-list-old-dogs (list )
+  set i (count stags + count dogs)
+
+
+
+  while [i < (count stags + count dogs + count old-dogs )]
+    [
+
+
+      if self != old-dog ((i )  )
+        [
+          let sub-heading towards old-dog (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (old-dog (i )) < (vision-dd / meters-per-patch));
+           [
+             set fov-list-old-dogs fput (old-dog (i)) fov-list-old-dogs
            ]
         ]
 
@@ -1888,11 +2196,11 @@ to find-traps-in-FOV
     ]
 
   set fov-list-traps (list )
-  set i (count stags + count dogs)
+  set i (count stags + count dogs + count old-dogs)
 
 
 
-  while [i < (count stags + count dogs + count traps)]
+  while [i < (count stags + count dogs + count old-dogs + count traps)]
     [
 
 
@@ -1919,6 +2227,276 @@ to find-traps-in-FOV
 
      set i (i + 1)
       ]
+end
+
+
+to beacon_sensing
+   let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+  set fov-list-traps-beacon (list )
+  set i (count stags + count dogs + count old-dogs)
+
+
+
+  while [i < (count stags + count dogs + count old-dogs + count traps)]
+    [
+
+
+      if self != trap ((i )  )
+        [
+          let sub-heading towards trap (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (trap (i )) < (vision-dd / meters-per-patch));
+           [
+             set fov-list-traps-beacon fput (trap (i)) fov-list-traps-beacon
+           ]
+        ]
+
+     set i (i + 1)
+      ]
+
+end
+
+to beacon_sensing_display
+
+  let vision-dd 0
+  let vision-cc 0
+
+  (ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+  member? self stags
+    [
+      set vision-dd vision-distance-stags
+      set vision-cc vision-cone-stags
+    ]
+  member? self dogs
+    [
+      set vision-dd vision-distance-dogs
+      set vision-cc vision-cone-dogs
+    ]
+  member? self old-dogs
+    [
+      ifelse old-dog-algorithm = "Intercept"
+      [
+        set vision-dd vision-distance-dogs
+        set vision-cc vision-cone-dogs
+      ]
+      [
+        set vision-dd 0
+        set vision-cc vision-cone-dogs
+      ]
+    ]
+
+  )
+
+    let number-of-beacon-sensors 12
+
+
+  hatch-discs number-of-beacon-sensors
+  [
+    (ifelse vision-cc = 360
+          [
+             set size 2 * (vision-dd / meters-per-patch)
+           ]
+
+         vision-cc = 180
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "180-deg-fov"
+             palette:set-transparency 50
+         ]
+         vision-cc = 90
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "90-deg-fov"
+             palette:set-transparency 50
+         ]
+         vision-cc = 45
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "45-deg-fov"
+             palette:set-transparency 50
+         ]
+         vision-cc = 60
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "60-deg-fov"
+             palette:set-transparency 50
+         ]
+         vision-cc = 30
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "30-deg-fov"
+             palette:set-transparency 50
+         ])
+  ]
+
+    let irr  [size] of self
+    let j [who] of max-one-of turtles [who]
+    let jc [who] of max-one-of turtles [who]
+    let heading_num 360 / (number-of-beacon-sensors)
+
+
+    while [j > jc - number-of-beacon-sensors]
+    [
+     ask disc (j)
+      [
+        setxy (((irr * -1 * cos((j - jc) * heading_num + [heading] of myself)) + [xcor] of self)) ((irr * sin((j - jc) * heading_num - [heading] of myself) + [ycor] of self))
+        set heading 180 + towards myself + [heading] of myself
+      ]
+      set j j - 1
+    ]
+
+
+
+
+end
+
+
+to make_initial_beacon_sensing_display
+
+  let vision-dd 0
+  let vision-cc 0
+
+  (ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+  member? self stags
+    [
+      set vision-dd vision-distance-stags
+      set vision-cc vision-cone-stags
+    ]
+  member? self dogs
+    [
+      set vision-dd vision-distance-dogs
+      set vision-cc vision-cone-dogs
+    ]
+  member? self old-dogs
+    [
+      ifelse old-dog-algorithm = "Intercept"
+      [
+        set vision-dd vision-distance-dogs
+        set vision-cc vision-cone-dogs
+      ]
+      [
+        set vision-dd 0
+        set vision-cc vision-cone-dogs
+      ]
+    ]
+
+  )
+
+    let number-of-beacon-sensors 12
+
+
+  hatch-discs number-of-beacon-sensors
+  [
+    (ifelse vision-cc = 360
+          [
+             set size 2 * (vision-dd / meters-per-patch)
+           ]
+
+         vision-cc = 180
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "180-deg-fov"
+             palette:set-transparency 70
+         ]
+         vision-cc = 90
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "90-deg-fov"
+             palette:set-transparency 70
+         ]
+         vision-cc = 45
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "45-deg-fov"
+             palette:set-transparency 70
+         ]
+         vision-cc = 60
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "60-deg-fov"
+             palette:set-transparency 70
+         ]
+         vision-cc = 30
+         [
+             set size 2 * (vision-dd / meters-per-patch)
+             set shape "30-deg-fov"
+             palette:set-transparency 70
+         ])
+
+    set my_turtle [who] of myself
+  ]
+
+    let irr  [size] of self
+    let j [who] of max-one-of turtles [who] - number-of-beacon-sensors + 1
+    let jc [who] of max-one-of turtles [who] - number-of-beacon-sensors + 1
+    let jcc [who] of max-one-of turtles [who]
+    let heading_num 360 / (number-of-beacon-sensors)
+
+
+    while [j <= jcc]
+    [
+     ask disc (j)
+      [
+        set place (j - jc)
+        setxy (((irr  * sin(place * heading_num + [heading] of myself)) + [xcor] of self)) ((irr * 1 * cos(place * heading_num +[heading] of myself) + [ycor] of self))
+        set heading 180 + towards myself
+
+        if place = 0
+        [
+         palette:set-transparency 10
+        ]
+      ]
+      set j j + 1
+    ]
+
+
+
+end
+
+to update_beacon_sensor_location
+  let number-of-beacon-sensors 12
+  let irr  [size] of self
+  let heading_num 360 / (number-of-beacon-sensors)
+
+  ask discs with [my_turtle = [who] of myself]
+  [
+    setxy (((irr  * sin(place * heading_num + [heading] of myself)) + [xcor] of myself)) ((irr * 1 * cos(place * heading_num +[heading] of myself) + [ycor] of myself))
+    set heading 180 + towards myself
+  ]
+
+
 end
 
 
@@ -2104,7 +2682,7 @@ seed-no
 seed-no
 1
 150
-56.0
+8.0
 1
 1
 NIL
@@ -2134,7 +2712,7 @@ vision-cone-traps
 vision-cone-traps
 0
 360
-45.0
+30.0
 5
 1
 deg
@@ -2245,7 +2823,7 @@ SWITCH
 127
 paint_fov?
 paint_fov?
-1
+0
 1
 -1000
 
@@ -2303,7 +2881,7 @@ number-of-traps
 number-of-traps
 0
 40
-2.0
+20.0
 1
 1
 NIL
@@ -2519,7 +3097,7 @@ vision-distance-stags
 vision-distance-stags
 0
 4000
-1000.0
+4000.0
 100
 1
 m
@@ -2599,7 +3177,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-0
+1
 
 BUTTON
 600
@@ -2927,7 +3505,7 @@ update_time
 update_time
 5
 300
-5.0
+20.0
 5
 1
 sec
@@ -2941,6 +3519,67 @@ SWITCH
 shifting_stag_target?
 shifting_stag_target?
 0
+1
+-1000
+
+SLIDER
+727
+613
+905
+646
+number-of-old-dogs
+number-of-old-dogs
+0
+5
+2.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+732
+659
+919
+692
+speed-old-dogs
+speed-old-dogs
+0
+10
+3.0
+0.1
+1
+m/s
+HORIZONTAL
+
+CHOOSER
+970
+617
+1213
+662
+old-dog-algorithm
+old-dog-algorithm
+"Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
+0
+
+TEXTBOX
+785
+240
+858
+285
+adds a bit of disturbance to stag
+11
+0.0
+1
+
+SWITCH
+327
+156
+491
+189
+beacon_sensors?
+beacon_sensors?
+1
 1
 -1000
 
