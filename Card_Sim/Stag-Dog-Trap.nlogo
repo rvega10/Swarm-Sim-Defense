@@ -230,6 +230,12 @@ stags-own [
            fov-list-old-dogs
            distance_traveled
            stag_target
+           adversary_set
+           adversary_set_warning
+           adversary_set_danger
+           adversary_total_list
+           body_width
+
           ]
 
 patches-own [
@@ -380,7 +386,8 @@ to go
         stag_procedure_manual
       ]
       [
-       stag_procedure
+;       stag_procedure
+        smart_stag_procedure
       ]
     ]
 
@@ -655,9 +662,84 @@ to stag_procedure
        ]
    ]
 
+
+
  update_agent_state; updates states of agents (i.e. position and heading)
 
 end
+
+to smart_stag_procedure
+
+  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
+   set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
+  do_sensing ; does the sensing to detect whatever the stag is set to detect
+
+
+  set adversary_total_list (list )
+
+  let vision-dd vision-distance-stags
+  let vision-cc vision-cone-stags
+  let nearest_hostile (max-one-of place-holders [distance myself])
+
+
+  set adversary_total_list (sentence fov-list-dogs fov-list-old-dogs fov-list-traps)
+
+  set adversary_set turtle-set map [b -> b] adversary_total_list
+
+  let  danger_angle (2 * asin (2 * body_width / vision-dd)) ; calculation of how much the opening-angle should be to maintain a "safe margin" of 3 times the body width
+
+  set adversary_set_danger adversary_set in-cone vision-dd danger_angle
+
+  set adversary_set_warning adversary_set in-cone vision-dd 30
+
+  (ifelse count adversary_set_danger > 0
+  [
+    set nearest_hostile min-one-of adversary_set_danger [distance myself]
+    let nearest_hostile_bearing towards nearest_hostile - heading
+
+    ifelse nearest_hostile_bearing < -180
+      [
+        set nearest_hostile_bearing nearest_hostile_bearing + 360
+       ]
+      [
+        ifelse nearest_hostile_bearing > 180
+        [set nearest_hostile_bearing nearest_hostile_bearing - 360]
+        [set nearest_hostile_bearing nearest_hostile_bearing]
+      ]
+
+    ifelse (nearest_hostile_bearing) > 0
+      [set inputs (list (speed-w-noise) 90(- turning-w-noise))]
+      [set inputs (list (speed-w-noise) 90( turning-w-noise))]
+  ]
+  count adversary_set_warning > 0
+  [
+    set nearest_hostile min-one-of adversary_set_warning  [distance myself]
+    let nearest_hostile_bearing towards nearest_hostile - heading
+
+    ifelse nearest_hostile_bearing < -180
+      [
+        set nearest_hostile_bearing nearest_hostile_bearing + 360
+       ]
+      [
+        ifelse nearest_hostile_bearing > 180
+        [set nearest_hostile_bearing nearest_hostile_bearing - 360]
+        [set nearest_hostile_bearing nearest_hostile_bearing]
+      ]
+
+    ifelse (nearest_hostile_bearing) > 0
+      [set inputs (list (speed-w-noise) 90(- turning-w-noise * .5))]
+      [set inputs (list (speed-w-noise) 90( turning-w-noise * .5))]
+  ]
+  [
+  go_to_south_goal
+  ]
+  )
+
+  update_agent_state; updates states of agents (i.e. position and heading)
+
+
+end
+
 
 to stag_procedure_manual ; buttons control what the inputs of the stag is, this is here to make the stag actually use those inputs to move
   ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
@@ -1610,7 +1692,7 @@ to make_dog
       choose_rand_turn
       set idiosyncratic_val round (random-normal 0 10)
 
-      set color red
+      set color blue
 
      set coll_angle2 0
      set detect_stags? false
@@ -1678,10 +1760,12 @@ to make_stag
       set angular-velocity 0
       set inputs [0 0 0]
       set size 90 / meters-per-patch; 90m diameter
+      set body_width 15 ; for calculations later on (doesn't actually affect the visual size of stag)
 
       set fov-list-traps (list )
       set fov-list-stags (list )
       set fov-list-dogs (list)
+      set adversary_total_list (list )
 
       set furthest_ycor min-pycor
 
@@ -1867,11 +1951,12 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
 
   let j number-of-stags + number-of-dogs
   let jc number-of-stags + number-of-dogs
+  let setup_range (max-pxcor - 1)  - (min-pxcor + 1)
 
   while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
      [ask old-dog (j )
        [
-         setxy ((j - jc) * -1 * (((max-pxcor - min-pxcor) / number-of-old-dogs)) + (max-pxcor - min-pxcor) / 4) (-1)
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-1)
 
         set heading 0
 
@@ -2682,7 +2767,7 @@ seed-no
 seed-no
 1
 150
-8.0
+4.0
 1
 1
 NIL
@@ -2881,7 +2966,7 @@ number-of-traps
 number-of-traps
 0
 40
-20.0
+10.0
 1
 1
 NIL
@@ -3530,7 +3615,7 @@ SLIDER
 number-of-old-dogs
 number-of-old-dogs
 0
-5
+30
 2.0
 1
 1
@@ -3560,7 +3645,7 @@ CHOOSER
 old-dog-algorithm
 old-dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
-0
+3
 
 TEXTBOX
 785
@@ -4114,6 +4199,24 @@ NetLogo 6.4.0
     </enumeratedValueSet>
     <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+  </experiment>
+  <experiment name="scoring_traps-and-old-dogs_waypoints" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="14500"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>win-loss-val</metric>
+    <enumeratedValueSet variable="old-dog-algorithm">
+      <value value="&quot;Decoy&quot;"/>
+      <value value="&quot;Follow Waypoints - Horizontally&quot;"/>
+      <value value="&quot;Intercept&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Trap_Setup">
+      <value value="&quot;Random - Uniform&quot;"/>
+      <value value="&quot;Random - Gaussian&quot;"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
   </experiment>
 </experiments>
 @#$#@#$#@
