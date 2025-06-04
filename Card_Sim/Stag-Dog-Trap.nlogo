@@ -937,7 +937,7 @@ to intercept
     let target-cue min-one-of cues [abs(distance stag 0 - distance myself)]
     ask target-cue
     [set color blue]
-    ifelse distance min-one-of cues [distance myself] < (0.5 * predicted_stag_speed * meters-per-patch)
+    ifelse distance min-one-of stags [distance myself] < (0.5 * predicted_stag_speed * meters-per-patch)
     [
       set target_bearing (towards min-one-of stags [distance myself]) - heading
     ]
@@ -1309,7 +1309,7 @@ to follow_waypoints_horizontally
 
    let target_dist distancexy (target_x) (ycor)
 
-   ifelse target_dist > 7 / meters-per-patch ; if the waypoint is within 7 meters (less than half of the stag width), the traps should stop
+   ifelse target_dist > 3 / meters-per-patch ; if the waypoint is within 7 meters (less than half of the stag width), the traps should stop
    [
      ifelse target_bearing < -180
      [
@@ -1931,10 +1931,13 @@ to dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 ne
   let j number-of-stags
   let jc number-of-stags
 
+  let setup_range (max-pxcor - 1)  - (min-pxcor + 1)
+
   while [j < number-of-stags  + number-of-dogs]
      [ask dog (j )
        [
-         setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-dogs)) - (max-pxcor - min-pxcor) / 4) (-1)
+;         setxy ((j - jc) * (((max-pxcor - min-pxcor) / number-of-dogs)) - (max-pxcor - min-pxcor) / 4) (-1)
+          setxy ((j - jc) * 1 * (setup_range / number-of-dogs) + ((min-pxcor + 1) + setup_range / (number-of-dogs * 2))) (-1)
 
         set heading 0
 
@@ -2015,7 +2018,7 @@ end
 
 
 to do_collisions
-if count other turtles with [breed != discs and  breed != cues and  breed != waypoints] > 0
+if count other turtles with [breed != discs and  breed != cues and  breed != waypoints and breed != stags] > 0
       [
         let closest-turtle1 (max-one-of place-holders [distance myself])
 
@@ -2023,13 +2026,13 @@ if count other turtles with [breed != discs and  breed != cues and  breed != way
         [
           ifelse count traps > 3
           [
-            set closest-turtles (min-n-of 2 other turtles with [breed != discs and breed != cues and  breed != waypoints] [distance myself])
+            set closest-turtles (min-n-of 2 other turtles with [breed != discs and breed != cues and  breed != waypoints and breed != stags] [distance myself])
 
             set closest-turtle1 (min-one-of closest-turtles [distance myself])
             set closest-turtle2 (max-one-of closest-turtles [distance myself])
           ]
           [
-            set closest-turtle1 (min-one-of other turtles with [breed != discs and breed != cues and  breed != waypoints] [distance myself])
+            set closest-turtle1 (min-one-of other turtles with [breed != discs and breed != cues and  breed != waypoints and breed != stags] [distance myself])
           ]
         ]
 
@@ -2767,7 +2770,7 @@ seed-no
 seed-no
 1
 150
-4.0
+3.0
 1
 1
 NIL
@@ -2966,7 +2969,7 @@ number-of-traps
 number-of-traps
 0
 40
-10.0
+5.0
 1
 1
 NIL
@@ -3262,7 +3265,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket"
-1
+0
 
 BUTTON
 600
@@ -3403,7 +3406,7 @@ SLIDER
 number-of-dogs
 number-of-dogs
 0
-2
+5
 0.0
 1
 1
@@ -3488,7 +3491,7 @@ SLIDER
 63
 meters-per-patch
 meters-per-patch
-50
+10
 1000
 250.0
 100
@@ -3616,7 +3619,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-2.0
+5.0
 1
 1
 NIL
@@ -4211,10 +4214,7 @@ NetLogo 6.4.0
       <value value="&quot;Follow Waypoints - Horizontally&quot;"/>
       <value value="&quot;Intercept&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Trap_Setup">
-      <value value="&quot;Random - Uniform&quot;"/>
-      <value value="&quot;Random - Gaussian&quot;"/>
-    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="5"/>
     <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
   </experiment>
