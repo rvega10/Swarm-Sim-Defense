@@ -19,6 +19,7 @@ globals [ tick-delta
           time-of-stag-escape
           time-to-first-see-list
           time-of-stag-caught
+          time-of-stag-stuck
           sr_patches
           end_flag
           score
@@ -27,6 +28,8 @@ globals [ tick-delta
           win-loss-list
           win-loss-val
           predicted_stag_state_list
+          distance-between-stag-old-dog-list
+
          ]
 
 
@@ -277,6 +280,8 @@ to setup
 
   set tick-delta 0.1 ; 10 ticks in one second
 
+  set distance-between-stag-old-dog-list (list )
+
   ask patches ;set background color
     [
         ifelse abs(pycor) = max-pycor or abs(pxcor) = max-pxcor
@@ -483,6 +488,8 @@ to go
     stop
   ]
 
+  do-plots
+
   tick-advance 1
 end
 
@@ -671,7 +678,14 @@ to measure_results
       [set time-of-stag-caught ticks]
     ]
 
-    if (time-of-stag-escape > 0) or  (time-of-stag-caught > 0)
+    if time-of-stag-stuck = 0
+    [
+      if [stuck_count] of stag 0 > 1000
+      [set time-of-stag-caught ticks]
+    ]
+
+
+    if (time-of-stag-escape > 0) or  (time-of-stag-caught > 0) or (time-of-stag-stuck > 0)
      [set end_flag 1]
 
 end
@@ -2871,6 +2885,17 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
 
 end
 
+to do-plots
+  set-current-plot "Distance from Old-Dog to Stag"
+  set-current-plot-pen "default"
+
+  set distance-between-stag-old-dog-list lput ([distance stag 0 ] of old-dog 1 ) distance-between-stag-old-dog-list
+
+  plot [distance stag 0 ] of old-dog 1
+
+
+end
+
 
 to clear-paint
 ask patches
@@ -3675,7 +3700,7 @@ seed-no
 seed-no
 1
 150
-25.0
+26.0
 1
 1
 NIL
@@ -4496,7 +4521,7 @@ SWITCH
 238
 shifting_stag_target?
 shifting_stag_target?
-0
+1
 1
 -1000
 
@@ -4509,7 +4534,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-1.0
+5.0
 1
 1
 NIL
@@ -4531,10 +4556,10 @@ m/s
 HORIZONTAL
 
 CHOOSER
-970
-617
-1213
-662
+716
+793
+959
+838
 old-dog-algorithm
 old-dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
@@ -4581,11 +4606,29 @@ start_stag_x
 start_stag_x
 -20
 20
-20.0
+-20.0
 0.1
 1
 NIL
 HORIZONTAL
+
+PLOT
+1049
+585
+1249
+735
+Distance from Old-Dog to Stag
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
