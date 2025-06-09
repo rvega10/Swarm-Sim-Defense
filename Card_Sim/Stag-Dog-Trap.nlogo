@@ -3658,7 +3658,7 @@ seed-no
 seed-no
 1
 150
-16.0
+33.0
 1
 1
 NIL
@@ -4540,17 +4540,6 @@ SWITCH
 189
 beacon_sensors?
 beacon_sensors?
-1
-1
--1000
-
-SWITCH
-662
-433
-877
-466
-project_predicted_stag_path?
-project_predicted_stag_path?
 1
 1
 -1000
