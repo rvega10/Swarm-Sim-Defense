@@ -78,6 +78,7 @@ traps-own [
            fov-list-dogs
            fov-list-old-dogs
            energy
+           range_status
           ]
 dogs-own [
           velocity
@@ -889,8 +890,22 @@ to trap_procedure
   do_sensing ; does the sensing to detect whatever the stag is set to detect
 
 
-; ifelse distance_traveled < trap_travel_range
- ifelse energy > 0
+
+
+ ifelse constant_travel_range?
+ [
+   ifelse distance_traveled < 2000
+   [ set range_status "not-empty"]
+   [ set range_status "empty"]
+
+ ]
+ [
+   ifelse energy > 0
+   [ set range_status "not-empty"]
+   [ set range_status "empty"]
+ ]
+
+ifelse range_status = "not-empty"
  [
  ifelse pcolor = red ; if the trap is outside of the environment (ie in the red zone) it starts trying to get back into the white area
    [
@@ -2636,7 +2651,9 @@ to make_stag
     if rand_x < min-pxcor
     [set rand_x (min-pxcor + 0.15)]
 
-    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+;    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+
+    setxy start_stag_x ((max-pycor - 1)- (90 / meters-per-patch) / 2)
 
      set heading 180
 
@@ -3658,7 +3675,7 @@ seed-no
 seed-no
 1
 150
-33.0
+25.0
 1
 1
 NIL
@@ -3857,7 +3874,7 @@ number-of-traps
 number-of-traps
 0
 40
-5.0
+0.0
 1
 1
 NIL
@@ -4153,13 +4170,13 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket" "Random - Gaussian near Launch Point"
-5
+0
 
 BUTTON
-561
-519
-644
-553
+575
+614
+658
+648
 Forward
 ask stags [ set inputs (list (speed-stags / meters-per-patch) 90 0)]
 NIL
@@ -4173,10 +4190,10 @@ NIL
 1
 
 BUTTON
-561
-566
-641
-600
+575
+661
+655
+695
 Reverse
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 270 0)]
 NIL
@@ -4190,10 +4207,10 @@ NIL
 1
 
 BUTTON
-571
-616
-635
-650
+585
+711
+649
+745
 Stop
 ask stags[ set inputs (list 0 0 0)]
 NIL
@@ -4207,10 +4224,10 @@ NIL
 1
 
 BUTTON
-653
-566
-751
-600
+667
+661
+765
+695
 Turn Right
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 90 turning-rate-stags)]
 NIL
@@ -4224,10 +4241,10 @@ NIL
 1
 
 BUTTON
-460
-570
-549
-604
+474
+665
+563
+699
 Turn Left
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 90 (- turning-rate-stags))]
 NIL
@@ -4252,10 +4269,10 @@ loop_sim?
 -1000
 
 TEXTBOX
-464
-497
-842
-516
+478
+592
+856
+611
 Controls for 'selected_algorithm_stag' = Manual Control
 11
 0.0
@@ -4442,7 +4459,7 @@ SWITCH
 59
 auto_set?
 auto_set?
-0
+1
 1
 -1000
 
@@ -4484,10 +4501,10 @@ shifting_stag_target?
 -1000
 
 SLIDER
-727
-613
-905
-646
+741
+708
+919
+741
 number-of-old-dogs
 number-of-old-dogs
 0
@@ -4499,10 +4516,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-732
-659
-919
-692
+746
+754
+933
+787
 speed-old-dogs
 speed-old-dogs
 0
@@ -4543,6 +4560,32 @@ beacon_sensors?
 1
 1
 -1000
+
+SWITCH
+622
+444
+802
+477
+constant_travel_range?
+constant_travel_range?
+1
+1
+-1000
+
+SLIDER
+579
+550
+751
+583
+start_stag_x
+start_stag_x
+-20
+20
+20.0
+0.1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -5090,6 +5133,16 @@ NetLogo 6.4.0
     <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="5"/>
     <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
+  </experiment>
+  <experiment name="old-dog-capture-region" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="14500"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>win-loss-val</metric>
+    <steppedValueSet variable="number-of-old-dogs" first="1" step="1" last="5"/>
+    <steppedValueSet variable="start_stag_x" first="-20" step="0.5" last="20"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
 @#$#@#$#@
