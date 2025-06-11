@@ -488,7 +488,7 @@ to go
     stop
   ]
 
-  do-plots
+;  do-plots
 
   tick-advance 1
 end
@@ -958,15 +958,17 @@ to calculate_remaining_energy
 
   let energy_consumption_rate 0
 
-  ifelse speed-w-noise * tick-delta = 0
+  ifelse (item 0 inputs) * tick-delta = 0
     [
       set energy_consumption_rate R_0
+
     ]
     [
       set energy_consumption_rate (R_1 + ((R_2 - R_1)/(chase_speed - transit_speed)) * ((speed-w-noise * tick-delta) - transit_speed))
     ]
 
   let energy_used energy_consumption_rate
+
 
   set energy energy - energy_used
 
@@ -1889,7 +1891,7 @@ to predict_reachability_set2
       ask cue i
       [
         set color red
-        palette:set-transparency ((i - max_i) * (100 / count cues))
+        palette:set-transparency ( 100 * ((i - max_i) / count cues))
         st
         set passed_flag 0
 
@@ -2889,7 +2891,7 @@ to do-plots
   set-current-plot "Distance from Old-Dog to Stag"
   set-current-plot-pen "default"
 
-  set distance-between-stag-old-dog-list lput ([distance stag 0 ] of old-dog 1 ) distance-between-stag-old-dog-list
+  set distance-between-stag-old-dog-list lput ([distance stag 0 ] of old-dog count stags ) distance-between-stag-old-dog-list
 
   plot [distance stag 0 ] of old-dog 1
 
@@ -3700,7 +3702,7 @@ seed-no
 seed-no
 1
 150
-26.0
+25.0
 1
 1
 NIL
@@ -3745,7 +3747,7 @@ speed-traps
 speed-traps
 0
 10
-5.5
+3.3
 1.1
 1
 m/s
@@ -3899,7 +3901,7 @@ number-of-traps
 number-of-traps
 0
 40
-0.0
+5.0
 1
 1
 NIL
@@ -4195,7 +4197,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket" "Random - Gaussian near Launch Point"
-0
+7
 
 BUTTON
 575
@@ -4484,7 +4486,7 @@ SWITCH
 59
 auto_set?
 auto_set?
-1
+0
 1
 -1000
 
@@ -4534,7 +4536,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-5.0
+0.0
 1
 1
 NIL
@@ -4606,7 +4608,7 @@ start_stag_x
 start_stag_x
 -20
 20
--20.0
+-3.9
 0.1
 1
 NIL
