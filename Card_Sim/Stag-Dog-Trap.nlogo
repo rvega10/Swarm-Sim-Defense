@@ -139,6 +139,8 @@ dogs-own [
            predicted_stag_ang-velocity_list
            viable_cues
            my_target
+           energy
+           range_status
           ]
 
 old-dogs-own [
@@ -197,6 +199,8 @@ old-dogs-own [
            predicted_stag_ang-velocity_list
            viable_cues
            my_target
+           energy
+           range_status
           ]
 
 
@@ -304,7 +308,7 @@ to setup
 
   create-launch-points 1 ; initalize launch point before deploying traps
   [
-    setxy 0 (min-pycor + 10)
+    setxy 0 (min-pycor + 15)
     set shape "circle"
     set size 1
     set color orange
@@ -360,6 +364,16 @@ to setup
 ;    set size 1
 ;    set heading 90
 ;  ]
+
+  ask dogs ; calculate energy after setup
+  [
+   calculate_initial_energy
+  ]
+
+  ask old-dogs ; calculate energy after setup
+  [
+   calculate_initial_energy
+  ]
 
   ask traps ; calculate energy after setup
   [
@@ -993,13 +1007,31 @@ to dog_procedure
   set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
   do_sensing ; does the sensing to detect whatever the stag is set to detect
 
+;  ifelse energy > 0
+;   [ set range_status "not-empty"]
+;   [ set range_status "empty"]
 
-;  intercept
-  intercept-updated
+   ifelse range_status = "not-empty"
+   [
+     (ifelse dog-algorithm = "Intercept"
+         [ intercept-updated]
+       dog-algorithm = "Follow Waypoints"
+         [follow_waypoints]
+       dog-algorithm = "Follow Waypoints - Horizontally"
+         [follow_waypoints_horizontally]
+       dog-algorithm = "Decoy"
+         [decoy]
+      )
+    ]
+    [
+    set inputs (list 0 90 0) ; stop moving
+  ]
 
  update_agent_state; updates states of agents (i.e. position and heading)
 
  check_if_touching_stag
+
+ calculate_remaining_energy
 
 end
 
@@ -1009,20 +1041,41 @@ to old-dog_procedure
   do_sensing ; does the sensing to detect whatever the stag is set to detect
 
 
-  (ifelse old-dog-algorithm = "Intercept"
-    [ intercept-updated]
-   old-dog-algorithm = "Follow Waypoints"
-    [follow_waypoints]
-   old-dog-algorithm = "Follow Waypoints - Horizontally"
-    [follow_waypoints_horizontally]
-   old-dog-algorithm = "Decoy"
-    [decoy]
-   )
+ ifelse constant_travel_range?
+ [
+   ifelse distance_traveled < 5000
+   [ set range_status "not-empty"]
+   [ set range_status "empty"]
+
+ ]
+ [
+   ifelse energy > 0
+   [ set range_status "not-empty"]
+   [ set range_status "empty"]
+ ]
+
+   ifelse range_status = "not-empty"
+   [
+     (ifelse old-dog-algorithm = "Intercept"
+       [ intercept-updated]
+      old-dog-algorithm = "Follow Waypoints"
+       [follow_waypoints]
+      old-dog-algorithm = "Follow Waypoints - Horizontally"
+       [follow_waypoints_horizontally]
+      old-dog-algorithm = "Decoy"
+       [decoy]
+      )
+    ]
+    [
+    set inputs (list 0 90 0) ; stop moving
+    ]
 
 
  update_agent_state; updates states of agents (i.e. position and heading)
 
  check_if_touching_stag
+
+ calculate_remaining_energy
 
 end
 
@@ -1209,7 +1262,9 @@ to intercept-updated
     ifelse count viable_cues > 0
     [
 ;      set my_target min-one-of viable_cues [who]
-      set my_target max-one-of viable_cues [time-from-stag - (distance myself / my_speed) ];[abs((distance myself / my_speed) - time-from-stag)]
+;      set my_target max-one-of viable_cues [time-from-stag - (distance myself / my_speed) ]
+;      set my_target min-one-of viable_cues [abs((distance myself / my_speed) - time-from-stag)]
+       set my_target min-one-of viable_cues [distance myself]
     ]
     [
        set my_target min-one-of cues [distance myself]
@@ -2533,7 +2588,7 @@ to make_trap
       set idiosyncratic_val round (random-normal 0 10)
       set energy 1
 
-
+      set range_status "not-empty"
 
      set coll_angle2 0
      set detect_stags? false
@@ -2574,6 +2629,8 @@ to make_dog
 
       set shape "dog"
 
+      set energy 1
+      set range_status "not-empty"
 
 
       set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
@@ -2622,6 +2679,9 @@ to make_old-dog
 
       set shape "dog"
       set color violet
+
+      set energy 1
+      set range_status "not-empty"
 
 
       set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
@@ -3702,7 +3762,7 @@ seed-no
 seed-no
 1
 150
-25.0
+33.0
 1
 1
 NIL
@@ -3901,17 +3961,17 @@ number-of-traps
 number-of-traps
 0
 40
-5.0
+2.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-247
-556
-420
-589
+244
+668
+417
+701
 c
 c
 0
@@ -3923,10 +3983,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-257
-536
-472
-562
+254
+648
+469
+674
 For Levy Distribution
 11
 0.0
@@ -3964,10 +4024,10 @@ time-of-stag-escape
 11
 
 SLIDER
-248
-596
-395
-629
+245
+708
+392
+741
 max_levy_time
 max_levy_time
 0
@@ -3989,30 +4049,30 @@ selected_algorithm_traps
 5
 
 CHOOSER
-251
-636
-437
-681
+248
+748
+434
+793
 distribution_for_direction
 distribution_for_direction
 "uniform" "gaussian" "triangle"
 0
 
 TEXTBOX
-13
-538
-228
-564
+10
+650
+225
+676
 for random walk algorithms parameters
 11
 0.0
 1
 
 SLIDER
-36
-597
-209
-630
+33
+709
+206
+742
 step_length_fixed
 step_length_fixed
 0
@@ -4176,7 +4236,7 @@ CHOOSER
 selected_algorithm_stag
 selected_algorithm_stag
 "Auto" "Manual Control" "Better-Auto"
-0
+1
 
 MONITOR
 1139
@@ -4306,10 +4366,10 @@ Controls for 'selected_algorithm_stag' = Manual Control
 1
 
 SLIDER
-35
-558
-209
-591
+32
+670
+206
+703
 turning-rate-rw
 turning-rate-rw
 0
@@ -4321,10 +4381,10 @@ deg/s
 HORIZONTAL
 
 TEXTBOX
-45
-640
-195
-658
+42
+752
+192
+770
 for spiral algorithm
 11
 0.0
@@ -4395,7 +4455,7 @@ speed-dogs
 speed-dogs
 0
 10
-7.0
+5.5
 .5
 1
 m/s
@@ -4523,7 +4583,7 @@ SWITCH
 238
 shifting_stag_target?
 shifting_stag_target?
-1
+0
 1
 -1000
 
@@ -4536,7 +4596,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-0.0
+3.0
 1
 1
 NIL
@@ -4595,7 +4655,7 @@ SWITCH
 477
 constant_travel_range?
 constant_travel_range?
-1
+0
 1
 -1000
 
@@ -4608,7 +4668,7 @@ start_stag_x
 start_stag_x
 -20
 20
--3.9
+-4.0
 0.1
 1
 NIL
@@ -4631,6 +4691,16 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" ""
+
+CHOOSER
+289
+493
+491
+538
+dog-algorithm
+dog-algorithm
+"Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
