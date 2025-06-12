@@ -970,6 +970,13 @@ to calculate_remaining_energy
   let transit_speed (1.1 / meters-per-patch ) * tick-delta
   let chase_speed 5.5 / meters-per-patch * tick-delta
 
+  if breed = traps
+  [
+    set transit_speed (1.1 / meters-per-patch ) * tick-delta
+    set chase_speed 3.3 / meters-per-patch * tick-delta
+  ]
+
+
   let energy_consumption_rate 0
 
   ifelse (item 0 inputs) * tick-delta = 0
@@ -990,6 +997,14 @@ to calculate_remaining_energy
 end
 
 to calculate_initial_energy
+
+  let transit_speed (1.1 / meters-per-patch ) * tick-delta
+
+  if breed = traps
+  [
+    set transit_speed (1.1 / meters-per-patch ) * tick-delta
+  ]
+
 
   let transit_distance (distance min-one-of launch-points [distance myself]) * meters-per-patch ; finds the distance from launch point and converts to meters
 
@@ -2727,9 +2742,9 @@ to make_stag
     if rand_x < min-pxcor
     [set rand_x (min-pxcor + 0.15)]
 
-;    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
 
-    setxy start_stag_x ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+;    setxy start_stag_x ((max-pycor - 1)- (90 / meters-per-patch) / 2)
 
      set heading 180
 
@@ -3762,7 +3777,7 @@ seed-no
 seed-no
 1
 150
-33.0
+30.0
 1
 1
 NIL
@@ -4257,7 +4272,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket" "Random - Gaussian near Launch Point"
-7
+5
 
 BUTTON
 575
