@@ -314,6 +314,7 @@ to setup
     set color orange
     ht
   ]
+  launch-point_setup_strict
 
 
   repeat number-of-traps [make_trap]
@@ -354,10 +355,11 @@ to setup
 
 
   ; position traps and dogs according to selection in drop down choosers in interface tab
+
   trap_setup_strict
   dog_setup_strict
   old-dog_setup_strict
-  launch-point_setup_strict
+
 
 
 ;  ask trap 1
@@ -2824,11 +2826,12 @@ to place_traps; defines region and/or orientation of where the traps should star
 
   if trap_setup = "Random - Gaussian near Launch Point"
    [
-      let txcor random-normal ([xcor] of min-one-of launch-points [distance myself]) 6.5
-      let tycor random-normal ([ycor] of min-one-of launch-points [distance myself]) 3.25
+      let my-launch-point one-of launch-points
+      let txcor random-normal ([xcor] of my-launch-point) 6.5
+      let tycor random-normal ([ycor] of my-launch-point) 3.25
 
-;      while [txcor > (max-pxcor - 1) or txcor < (min-pxcor + 1)]
-;      [set txcor random-normal 0 6.5]
+      while [txcor > (max-pxcor - 1) or txcor < (min-pxcor + 1)]
+      [set txcor random-normal ([xcor] of my-launch-point) 6.5]
 ;
 ;      while [tycor > 0 or tycor < (min-pycor + 1)]
 ;      [set tycor random-normal -10 3.25]
@@ -2977,7 +2980,7 @@ to launch-point_setup_strict; if you want to more precisely place the dogs (i.e.
 
         set heading 0
 
-         setxy xcor (ycor + 0.01)
+         setxy xcor (min-pycor + 15)
        ]
 
        set j j + 1
@@ -3801,7 +3804,7 @@ seed-no
 seed-no
 1
 150
-11.0
+12.0
 1
 1
 NIL
@@ -4000,7 +4003,7 @@ number-of-traps
 number-of-traps
 0
 40
-0.0
+20.0
 1
 1
 NIL
