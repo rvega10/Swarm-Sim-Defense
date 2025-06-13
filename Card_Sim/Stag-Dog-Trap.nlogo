@@ -306,15 +306,15 @@ to setup
   repeat number-of-dogs [make_dog]
   repeat number-of-old-dogs [make_old-dog]
 
-  create-launch-points 2 ; initalize launch point before deploying traps
+  create-launch-points 1 ; initalize launch point before deploying traps
   [
-    setxy 0 (min-pycor + 15)
+    setxy (min-pxcor + 15) (min-pycor + 15)
     set shape "circle"
     set size 1
     set color orange
     ht
   ]
-  launch-point_setup_strict
+;  launch-point_setup_strict
 
 
   repeat number-of-traps [make_trap]
@@ -358,7 +358,17 @@ to setup
 
   trap_setup_strict
   dog_setup_strict
-  old-dog_setup_strict
+
+  (ifelse old-dog-setup = "Evenly-Spaced Picket"
+    [old-dog_setup_strict]
+   old-dog-setup = "Center Gap Picket"
+   [old-dog_setup_strict_gap_center]
+   old-dog-setup = "Edge Gap Picket"
+   [old-dog_setup_strict_gap_sides]
+   old-dog-setup = "Slant Picket"
+   [old-dog_setup_strict_slant]
+  )
+
 
 
 
@@ -540,10 +550,10 @@ ifelse paint_fov?
         display_FOV
       ]
 
-;    ask old-dogs
-;      [
-;        display_FOV
-;      ]
+    ask old-dogs
+      [
+        display_FOV
+      ]
   ]
   [
     ask discs [ht]
@@ -582,20 +592,23 @@ to display_FOV ;procedure that uses fake agents to display FOV rather than paint
     ]
   member? self dogs
     [
-      set vision-dd vision-distance-dogs
+      set vision-dd 125;vision-distance-dogs
       set vision-cc vision-cone-dogs
     ]
   member? self old-dogs
     [
-      ifelse old-dog-algorithm = "Intercept"
-      [
-        set vision-dd vision-distance-dogs
+;      ifelse old-dog-algorithm = "Intercept"
+;      [
+;        set vision-dd vision-distance-dogs
+;        set vision-cc vision-cone-dogs
+;      ]
+;      [
+;        set vision-dd 0
+;        set vision-cc vision-cone-dogs
+;      ]
+      set vision-dd 125;vision-distance-dogs
         set vision-cc vision-cone-dogs
-      ]
-      [
-        set vision-dd 0
-        set vision-cc vision-cone-dogs
-      ]
+
     ]
 
   )
@@ -1347,7 +1360,7 @@ to place-cues
       ask cue i
       [
         set color yellow
-        st
+;        st
         let cue-x 0
         let cue-y 0
         let cue-heading 0
@@ -1460,7 +1473,7 @@ to find_stag_reachable_set
       ask cue i
       [
         set color red
-        st
+;        st
         let cue-heading current-heading
         let cue-x current-x
         let cue-y current-y
@@ -1771,7 +1784,7 @@ to predict_reachability_set
       [
         set color red
         palette:set-transparency ((i - max_i) * (100 / count cues))
-        st
+;        st
 
         let cue-heading current-heading
         let cue-x current-x
@@ -2954,7 +2967,7 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
   while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
      [ask old-dog (j )
        [
-         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-1)
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-2)
 
         set heading 0
 
@@ -2963,8 +2976,73 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
 
        set j j + 1
      ]
+end
+
+to old-dog_setup_strict_gap_center
+
+  let j number-of-stags + number-of-dogs
+  let jc number-of-stags + number-of-dogs
+  let setup_range (max-pxcor - 1)  - (min-pxcor + 1)
+  let setup_range1 (max-pxcor - 1)  - (min-pxcor + 1)
+  let setup_range2 (max-pxcor - 1)  - (min-pxcor + 1)
 
 
+  while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
+     [ask old-dog (j )
+       [
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-2)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+end
+
+to old-dog_setup_strict_gap_sides
+
+  let j number-of-stags + number-of-dogs
+  let jc number-of-stags + number-of-dogs
+  let setup_range (max-pxcor - 1)  - (min-pxcor + 1)
+  let setup_range1 (max-pxcor - 1)  - (min-pxcor + 1)
+  let setup_range2 (max-pxcor - 1)  - (min-pxcor + 1)
+
+
+  while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
+     [ask old-dog (j )
+       [
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-2)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+end
+
+to old-dog_setup_strict_slant
+
+  let j number-of-stags + number-of-dogs
+  let jc number-of-stags + number-of-dogs
+  let setup_range ((max-pxcor - 1)  - (min-pxcor + 1) )/ 2
+
+
+  while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
+     [ask old-dog (j )
+       [
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-1)
+
+        set heading 0
+
+         setxy xcor (xcor )
+       ]
+
+       set j j + 1
+     ]
 end
 
 to launch-point_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 needs to be at position x, etc.)
@@ -3804,7 +3882,7 @@ seed-no
 seed-no
 1
 150
-12.0
+44.0
 1
 1
 NIL
@@ -4003,7 +4081,7 @@ number-of-traps
 number-of-traps
 0
 40
-20.0
+10.0
 1
 1
 NIL
@@ -4441,7 +4519,7 @@ number-of-dogs
 number-of-dogs
 0
 5
-0.0
+1.0
 1
 1
 NIL
@@ -4497,7 +4575,7 @@ speed-dogs
 speed-dogs
 0
 10
-5.5
+7.0
 .5
 1
 m/s
@@ -4638,7 +4716,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-4.0
+1.0
 1
 1
 NIL
@@ -4667,7 +4745,7 @@ CHOOSER
 old-dog-algorithm
 old-dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
-1
+0
 
 TEXTBOX
 785
@@ -4697,7 +4775,7 @@ SWITCH
 477
 constant_travel_range?
 constant_travel_range?
-1
+0
 1
 -1000
 
@@ -4743,6 +4821,16 @@ dog-algorithm
 dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
 1
+
+CHOOSER
+862
+624
+1040
+669
+old-dog-setup
+old-dog-setup
+"Evenly-Spaced Picket" "Center Gap Picket" "Edge Gap Picket" "Slant Picket"
+3
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -5300,6 +5388,17 @@ NetLogo 6.4.0
     <steppedValueSet variable="number-of-old-dogs" first="1" step="1" last="5"/>
     <steppedValueSet variable="start_stag_x" first="-20" step="0.5" last="20"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+  </experiment>
+  <experiment name="scoring_traps-and-old-dogs-and-dogs" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="14500"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>win-loss-val</metric>
+    <steppedValueSet variable="number-of-dogs" first="0" step="1" last="3"/>
+    <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="10"/>
+    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
   </experiment>
 </experiments>
 @#$#@#$#@
