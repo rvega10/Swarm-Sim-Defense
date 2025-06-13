@@ -306,12 +306,13 @@ to setup
   repeat number-of-dogs [make_dog]
   repeat number-of-old-dogs [make_old-dog]
 
-  create-launch-points 1 ; initalize launch point before deploying traps
+  create-launch-points 2 ; initalize launch point before deploying traps
   [
     setxy 0 (min-pycor + 15)
     set shape "circle"
     set size 1
     set color orange
+    ht
   ]
 
 
@@ -356,6 +357,7 @@ to setup
   trap_setup_strict
   dog_setup_strict
   old-dog_setup_strict
+  launch-point_setup_strict
 
 
 ;  ask trap 1
@@ -536,10 +538,10 @@ ifelse paint_fov?
         display_FOV
       ]
 
-    ask old-dogs
-      [
-        display_FOV
-      ]
+;    ask old-dogs
+;      [
+;        display_FOV
+;      ]
   ]
   [
     ask discs [ht]
@@ -2962,6 +2964,28 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
 
 end
 
+to launch-point_setup_strict; if you want to more precisely place the dogs (i.e. dog 2 needs to be at position x, etc.)
+
+  let j number-of-stags + number-of-dogs + number-of-old-dogs
+  let jc number-of-stags + number-of-dogs  + number-of-old-dogs
+  let setup_range (max-pxcor - 1)  - (min-pxcor + 1)
+
+  while [j < number-of-stags  + number-of-dogs + number-of-old-dogs + count launch-points]
+     [ask launch-point (j )
+       [
+         setxy ((j - jc) * -1 * (setup_range / count launch-points) + ((max-pxcor - 1) - setup_range / (count launch-points * 2))) (-1)
+
+        set heading 0
+
+         setxy xcor (ycor + 0.01)
+       ]
+
+       set j j + 1
+     ]
+
+
+end
+
 to do-plots
   set-current-plot "Distance from Old-Dog to Stag"
   set-current-plot-pen "default"
@@ -3777,7 +3801,7 @@ seed-no
 seed-no
 1
 150
-30.0
+11.0
 1
 1
 NIL
@@ -3918,7 +3942,7 @@ SWITCH
 127
 paint_fov?
 paint_fov?
-1
+0
 1
 -1000
 
@@ -3976,7 +4000,7 @@ number-of-traps
 number-of-traps
 0
 40
-2.0
+0.0
 1
 1
 NIL
@@ -4251,7 +4275,7 @@ CHOOSER
 selected_algorithm_stag
 selected_algorithm_stag
 "Auto" "Manual Control" "Better-Auto"
-1
+0
 
 MONITOR
 1139
@@ -4272,7 +4296,7 @@ CHOOSER
 Trap_setup
 Trap_setup
 "Random - Uniform" "Random - Gaussian" "Random - Inverse-Gaussian" "Barrier" "Random Group" "Perfect Picket" "Imperfect Picket" "Random - Gaussian near Launch Point"
-5
+7
 
 BUTTON
 575
@@ -4611,7 +4635,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-3.0
+4.0
 1
 1
 NIL
@@ -4670,7 +4694,7 @@ SWITCH
 477
 constant_travel_range?
 constant_travel_range?
-0
+1
 1
 -1000
 
