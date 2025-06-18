@@ -308,7 +308,8 @@ to setup
 
   create-launch-points 1 ; initalize launch point before deploying traps
   [
-    setxy (min-pxcor + 15) (min-pycor + 15)
+    setxy (min-pxcor + 10) (min-pycor + 17)
+;   setxy 0 (min-pycor + 15)
     set shape "circle"
     set size 1
     set color orange
@@ -384,10 +385,10 @@ to setup
    calculate_initial_energy
   ]
 
-  ask old-dogs ; calculate energy after setup
-  [
-   calculate_initial_energy
-  ]
+;  ask old-dogs ; calculate energy after setup
+;  [
+;   calculate_initial_energy
+;  ]
 
   ask traps ; calculate energy after setup
   [
@@ -899,9 +900,6 @@ to smart_stag_procedure_P_control
         [set nearest_hostile_bearing nearest_hostile_bearing]
       ]
 
-    ifelse (nearest_hostile_bearing) > 0
-      [set inputs (list (speed-w-noise) 90(- turning-w-noise))]
-      [set inputs (list (speed-w-noise) 90( turning-w-noise))]
 
     let reaction-turning-rate ((-1) * turning-w-noise * sign(nearest_hostile_bearing) * (1 - abs(nearest_hostile_bearing)/ (vision-cc)))
 
@@ -957,6 +955,7 @@ ifelse range_status = "not-empty"
      get_back_in_bounds
    ]
    [
+
      select_alg_procedure ; this is chosen in interface tab and is what the traps do when not out of bounds
    ]
   ]
@@ -1096,6 +1095,8 @@ to old-dog_procedure
        [follow_waypoints_horizontally]
       old-dog-algorithm = "Decoy"
        [decoy]
+      old-dog-algorithm = "Moving Wall"
+       [moving-wall]
       )
     ]
     [
@@ -1737,169 +1738,6 @@ ask cues with [(who - (count stags + count launch-points + count traps + count d
 
 end
 
-to predict_reachability_set
-  let distance-remaining [distancexy item 0 stag_target item 1 stag_target] of stag 0
-
-  let number-of-predictions (count cues)
-
-  let prediction-spacing distance-remaining / number-of-predictions
-
-  let prediction-spacing_time (prediction-spacing / (speed-stags / meters-per-patch * tick-delta))
-
-
-  let current-x [xcor] of stag 0
-  let current-y [ycor] of stag 0
-  let current-heading [heading] of stag 0
-
-  let predicted_x 0
-  let predicted_y 0
-  let predicted_heading 0
-
-  let max_speed speed-stags * tick-delta / meters-per-patch
-  let max-ang-velocity turning-rate-stags * tick-delta
-
-
-
-  set i (count stags + count launch-points + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
-
-  let max_i (count stags + count launch-points + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
-
-
-;  while [ tt < prediction-spacing_time ]
-;  [
-;    set predicted_heading predicted_heading + ((0)  * (i - max_i + 1) * 1)
-;    set predicted_x predicted_x + (max_speed * sin(cue-heading) * (i - max_i + 1) * 1) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
-;    set predicted_y predicted_y + (max_speed * cos(cue-heading) * (i - max_i + 1) * 1)
-;
-;    set tt tt + 1
-;  ]
-
-
-
-
-
-  while [i < (max_i + (count cues ))] ; positions the cues if the stag goes only straight
-    [
-      ask cue i
-      [
-        set color red
-        palette:set-transparency ((i - max_i) * (100 / count cues))
-;        st
-
-        let cue-heading current-heading
-        let cue-x current-x
-        let cue-y current-y
-
-        if who != (max_i)
-        [
-         set cue-heading [heading] of cue (i - 1)
-         set cue-x [xcor] of cue (i - 1)
-         set cue-y [ycor] of cue (i - 1)
-
-        ]
-
-        let tt 0
-        let cue-heading-offset 0
-        let cue-turning-input 0
-        set passed_flag 0
-
-        while [ tt < prediction-spacing_time ]
-        [
-
-
-          set cue-heading cue-heading + (cue-turning-input  * (i - max_i + 1))
-          set cue-x cue-x + (max_speed * sin(cue-heading) * (i - max_i + 1)) ;; i think the error is coming from this part becuase i am already calculateing future heading but then still multipling counter?
-          set cue-y cue-y + (max_speed * cos(cue-heading) * (i - max_i + 1))
-
-          set cue-heading-offset 180 - cue-heading
-
-          ifelse cue-heading-offset < -180
-          [
-            set cue-heading-offset cue-heading-offset + 360
-          ]
-          [
-            ifelse cue-heading-offset > 180
-            [set cue-heading-offset cue-heading-offset - 360]
-            [set cue-heading-offset cue-heading-offset]
-          ]
-
-          (ifelse ((cue-heading-offset) > -1 and cue-heading-offset < 1)
-          [set cue-turning-input 0]
-          (cue-heading-offset) > 1
-          [set cue-turning-input max-ang-velocity]
-          (cue-heading-offset) < -1
-          [set cue-turning-input (- max-ang-velocity)])
-
-
-          set tt tt + 1
-        ]
-
-        if cue-x > max-pxcor
-         [
-           set cue-x max-pxcor
-           ifelse cue-y-out = "N/A"
-            [
-              set cue-y-out cue-y
-              set cue-y cue-y-out
-            ]
-            [set cue-y cue-y-out]
-
-         ]
-
-        if cue-x < min-pxcor
-        [
-          set cue-x min-pxcor
-          ifelse cue-y-out = "N/A"
-            [
-              set cue-y-out cue-y
-              set cue-y cue-y-out
-            ]
-            [set cue-y cue-y-out]
-        ]
-
-        if cue-y > max-pycor
-         [
-           set cue-y max-pycor
-           ifelse cue-x-out = "N/A"
-            [
-              set cue-x-out cue-x
-              set cue-x cue-x-out
-            ]
-            [set cue-x cue-x-out]
-         ]
-
-        if cue-y < min-pycor
-        [
-          set cue-y min-pycor
-          ifelse cue-x-out = "N/A"
-            [
-              set cue-x-out cue-x
-              set cue-x cue-x-out
-            ]
-            [set cue-x cue-x-out]
-        ]
-
-        setxy cue-x cue-y
-        set heading cue-heading
-;        print cue-heading
-
-;        ifelse i - max_i > 0
-;        [
-;        create-link-with cue (i - 1)
-;        ]
-;        [
-;          create-link-with stag 0
-;        ]
-      ]
-      set i (i + 1)
-    ]
-  set cue-x-out "N/A"
-  set cue-y-out "N/A"
-
-
-
-end
-
 
 to predict_reachability_set2
   let distance-remaining [distancexy item 0 stag_target item 1 stag_target] of stag 0
@@ -1979,7 +1817,7 @@ to predict_reachability_set2
       [
         set color red
         palette:set-transparency ( 100 * ((i - max_i) / count cues))
-        st
+;        st
         set passed_flag 0
 
         let cue_state_info item ( i - max_i) predicted_stag_state_list
@@ -2075,6 +1913,9 @@ to select_alg_procedure
 
   if selected_algorithm_traps = "Follow Waypoints - Horizontally"
   [follow_waypoints_horizontally]
+
+  if selected_algorithm_traps = "Follow Waypoints - Strategically"
+  [follow_waypoints_strategically]
 
 end
 
@@ -2308,6 +2149,78 @@ to follow_waypoints_horizontally
   ]
 
 end
+
+to follow_waypoints_strategically
+
+
+
+  if count waypoints > 0
+  [
+   let target (min-one-of waypoints [distance myself] )
+   let target_y [ycor] of target
+   let target_x [xcor] of target
+
+   if target_y > ycor
+   [
+     set target_y ycor
+   ]
+
+
+
+   let target_bearing (towardsxy (target_x) (ycor)) - heading
+
+   let target_dist distancexy (target_x) (ycor)
+
+   ifelse target_dist < 3 / meters-per-patch or target_dist > 1000 / meters-per-patch; if the waypoint is within 3 meters (less than half of the stag width) or if it is too far (1000 meter away), the traps should stop
+   [
+     set inputs (list 0 90 0)
+   ]
+   [
+     ifelse target_bearing < -180
+     [
+       set target_bearing target_bearing + 360
+      ]
+     [
+       ifelse target_bearing > 180
+       [set target_bearing target_bearing - 360]
+       [set target_bearing target_bearing]
+     ]
+
+
+    ifelse (target_bearing) > 0
+      [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+      [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+   ]
+
+
+
+  ]
+
+end
+
+to moving-wall
+
+   let target_bearing 270 - heading
+
+
+   ifelse target_bearing < -180
+   [
+     set target_bearing target_bearing + 360
+    ]
+   [
+     ifelse target_bearing > 180
+     [set target_bearing target_bearing - 360]
+     [set target_bearing target_bearing]
+   ]
+
+
+  ifelse (target_bearing) > 0
+    [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+    [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
+
+
+end
+
 
 to decoy
   set inputs (list 0 90 0)
@@ -2840,8 +2753,8 @@ to place_traps; defines region and/or orientation of where the traps should star
   if trap_setup = "Random - Gaussian near Launch Point"
    [
       let my-launch-point one-of launch-points
-      let txcor random-normal ([xcor] of my-launch-point) 6.5
-      let tycor random-normal ([ycor] of my-launch-point) 3.25
+      let txcor random-normal ([xcor] of my-launch-point) 3.5
+      let tycor random-normal ([ycor] of my-launch-point) 1.25
 
       while [txcor > (max-pxcor - 1) or txcor < (min-pxcor + 1)]
       [set txcor random-normal ([xcor] of my-launch-point) 6.5]
@@ -2967,7 +2880,7 @@ to old-dog_setup_strict; if you want to more precisely place the dogs (i.e. dog 
   while [j < number-of-stags  + number-of-dogs + number-of-old-dogs]
      [ask old-dog (j )
        [
-         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (-2)
+         setxy ((j - jc) * -1 * (setup_range / number-of-old-dogs) + ((max-pxcor - 1) - setup_range / (number-of-old-dogs * 2))) (0)
 
         set heading 0
 
@@ -3882,7 +3795,7 @@ seed-no
 seed-no
 1
 150
-44.0
+31.0
 1
 1
 NIL
@@ -4081,7 +3994,7 @@ number-of-traps
 number-of-traps
 0
 40
-10.0
+6.0
 1
 1
 NIL
@@ -4165,8 +4078,8 @@ CHOOSER
 193
 selected_algorithm_traps
 selected_algorithm_traps
-"Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints" "Follow Waypoints - Horizontally"
-5
+"Lie and Wait" "Straight" "Standard Random" "Levy" "Follow Waypoints" "Follow Waypoints - Horizontally" "Follow Waypoints - Strategically"
+6
 
 CHOOSER
 248
@@ -4519,7 +4432,7 @@ number-of-dogs
 number-of-dogs
 0
 5
-1.0
+0.0
 1
 1
 NIL
@@ -4716,7 +4629,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-1.0
+8.0
 1
 1
 NIL
@@ -4744,8 +4657,8 @@ CHOOSER
 838
 old-dog-algorithm
 old-dog-algorithm
-"Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
-0
+"Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally" "Moving Wall"
+4
 
 TEXTBOX
 785
@@ -4775,7 +4688,7 @@ SWITCH
 477
 constant_travel_range?
 constant_travel_range?
-0
+1
 1
 -1000
 
@@ -5392,12 +5305,12 @@ NetLogo 6.4.0
   <experiment name="scoring_traps-and-old-dogs-and-dogs" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="14500"/>
+    <timeLimit steps="19500"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
     <metric>win-loss-val</metric>
     <steppedValueSet variable="number-of-dogs" first="0" step="1" last="3"/>
     <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="10"/>
-    <steppedValueSet variable="number-of-traps" first="5" step="5" last="40"/>
+    <steppedValueSet variable="number-of-traps" first="2" step="2" last="20"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
   </experiment>
 </experiments>
