@@ -371,6 +371,10 @@ to setup
   )
 
 
+  ask dogs
+  [
+    setxy xcor dog_start_y
+  ]
 
 
 ;  ask trap 1
@@ -790,7 +794,7 @@ to smart_stag_procedure
 
   let  danger_angle (2 * asin (2 * body_width / vision-dd)) ; calculation of how much the opening-angle should be to maintain a "safe margin" of 3 times the body width
 
-  set adversary_set_danger adversary_set in-cone vision-dd danger_angle
+  set adversary_set_danger adversary_set in-cone vision-dd 10;danger_angle
 
   set adversary_set_warning adversary_set in-cone vision-dd 30
 
@@ -1301,6 +1305,12 @@ to intercept-updated
     ]
     [
        set my_target min-one-of cues [distance myself]
+    ]
+
+;    set my_target max-one-of cues [distance stag 0]
+    if distance min-one-of stags [distance myself] < 100 / meters-per-patch
+    [
+      set my_target min-one-of stags [distance myself]
     ]
 
     ask my_target
@@ -2247,7 +2257,7 @@ to update_waypoint
   [
     ask waypoints
     [
-     setxy ([xcor] of stag 0) (([ycor] of stag 0 + min-pycor) / 2)
+     setxy ([xcor] of stag 0) ([ycor] of stag 0);(([ycor] of stag 0 + min-pycor) / 2)
     ]
   ]
 end
@@ -2672,9 +2682,10 @@ to make_stag
     if rand_x < min-pxcor
     [set rand_x (min-pxcor + 0.15)]
 
-    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+;    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
 
 ;    setxy start_stag_x ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+    setxy start_stag_x 19.5
 
      set heading 180
 
@@ -3795,7 +3806,7 @@ seed-no
 seed-no
 1
 150
-31.0
+3.0
 1
 1
 NIL
@@ -3936,7 +3947,7 @@ SWITCH
 127
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -3994,7 +4005,7 @@ number-of-traps
 number-of-traps
 0
 40
-6.0
+0.0
 1
 1
 NIL
@@ -4432,7 +4443,7 @@ number-of-dogs
 number-of-dogs
 0
 5
-0.0
+1.0
 1
 1
 NIL
@@ -4579,7 +4590,7 @@ SWITCH
 59
 auto_set?
 auto_set?
-0
+1
 1
 -1000
 
@@ -4629,7 +4640,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-8.0
+0.0
 1
 1
 NIL
@@ -4644,7 +4655,7 @@ speed-old-dogs
 speed-old-dogs
 0
 10
-3.0
+2.2
 0.1
 1
 m/s
@@ -4700,8 +4711,8 @@ SLIDER
 start_stag_x
 start_stag_x
 -20
-20
--4.0
+21
+-1.0
 0.1
 1
 NIL
@@ -4744,6 +4755,21 @@ old-dog-setup
 old-dog-setup
 "Evenly-Spaced Picket" "Center Gap Picket" "Edge Gap Picket" "Slant Picket"
 3
+
+SLIDER
+587
+504
+759
+537
+dog_start_y
+dog_start_y
+-20
+21
+20.0
+0.25
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -5312,6 +5338,16 @@ NetLogo 6.4.0
     <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="10"/>
     <steppedValueSet variable="number-of-traps" first="2" step="2" last="20"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
+  </experiment>
+  <experiment name="dog_intercept_range2" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="19500"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>win-loss-val</metric>
+    <steppedValueSet variable="dog_start_y" first="13" step="0.5" last="20"/>
+    <steppedValueSet variable="start_stag_x" first="-20" step="2" last="20"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="3"/>
   </experiment>
 </experiments>
 @#$#@#$#@
