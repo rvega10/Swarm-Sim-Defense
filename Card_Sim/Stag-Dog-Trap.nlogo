@@ -268,10 +268,13 @@ discs-own [
 cues-own [
             age
             passed_flag
-            dist-to-stag
-            time-from-stag
+            dist-to-waypoint
+            time-from-waypoint
           ]
 
+waypoints-own[
+ stag_target
+]
 
 
 ;;
@@ -460,19 +463,20 @@ to go
 ;        smart_stag_procedure_P_control
       ]
 
-      if distance min-one-of cues [distance myself] < (10 / meters-per-patch)
-      [
-        ask min-one-of cues [distance myself]
-        [
-          set passed_flag 1
-        ]
-      ]
+;      if distance min-one-of cues [distance myself] < (10 / meters-per-patch)
+;      [
+;        ask min-one-of cues [distance myself]
+;        [
+;          set passed_flag 1
+;        ]
+;      ]
 
-     if distance min-one-of cues with [passed_flag = 0] [distance myself] > ([distancexy item 0 stag_target item 1 stag_target] of stag 0 / count cues)
-       [
-         predict_reachability_set2
-       ]
+;     if distance min-one-of cues with [passed_flag = 0] [distance myself] > ([distancexy item 0 stag_target item 1 stag_target] of stag 0 / count cues)
+;       [
+;         predict_reachability_set_stag
+;       ]
     ]
+
 
  ask traps
     [
@@ -1149,134 +1153,134 @@ end
 
 
 
-to intercept
-
-  if length fov-list-stags > 0
-  [
-    ifelse length measured_stag_x-position_list > 100
-      [
-       set measured_stag_x-position_list remove-item 0 measured_stag_x-position_list
-        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
-       ]
-      [
-        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
-      ]
-
-    ifelse length measured_stag_y-position_list > 100
-      [
-       set measured_stag_y-position_list remove-item 0 measured_stag_y-position_list
-        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
-       ]
-      [
-        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
-      ]
-
-    ifelse length measured_stag_time_list > 100
-      [
-       set measured_stag_time_list remove-item 0 measured_stag_time_list
-        set measured_stag_time_list lput (ticks) measured_stag_time_list
-       ]
-      [
-        set measured_stag_time_list lput (ticks) measured_stag_time_list
-      ]
-  ]
-
-  ifelse length measured_stag_x-position_list > 3
-  [
-    let delta-x (last measured_stag_x-position_list - item (length measured_stag_x-position_list - 2) measured_stag_x-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
-    let delta-y (last measured_stag_y-position_list - item (length measured_stag_y-position_list - 2) measured_stag_y-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
-
-
-    set predicted_stag_speed sqrt (delta-x ^ 2 + delta-y ^ 2)
-    if not (delta-x = 0 and delta-y = 0)
-      [set predicted_stag_heading atan delta-x delta-y]
-
-    set predicted_stag_ang-velocity ((predicted_stag_heading - old_predicted_stag_heading) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list))
-
-    set old_predicted_stag_heading predicted_stag_heading
-
-
-  ]
-  [
-    set predicted_stag_speed 0
-    set predicted_stag_heading 0
-  ]
-
-  ifelse length predicted_stag_speed_list > 100
-    [
-     set predicted_stag_speed_list remove-item 0 predicted_stag_speed_list
-      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
-     ]
-    [
-      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
-    ]
-
-  ifelse length predicted_stag_ang-velocity_list > 100
-    [
-     set predicted_stag_ang-velocity_list remove-item 0 predicted_stag_ang-velocity_list
-      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
-     ]
-    [
-      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
-    ]
-
-
-  if length measured_stag_x-position_list > 3
-  [place-cues]
-
-  let target_bearing (0) - heading
-
-
-
-  ifelse lead_stag?
-  [
-;    let target-cue (max-one-of (cues with [[ycor] of self < [ycor] of stag 0]) [distance stag 0] )
-    let target-cue min-one-of cues [abs(distance stag 0 - distance myself)]
-    ask target-cue
-    [set color blue]
-    ifelse distance min-one-of stags [distance myself] < (0.5 * predicted_stag_speed * meters-per-patch)
-    [
-      set target_bearing (towards min-one-of stags [distance myself]) - heading
-    ]
-    [
-      ifelse length measured_stag_x-position_list <= 3
-      [
-        set target_bearing (0) - heading
-      ]
-      [
-        set target_bearing (towards target-cue ) - heading
-
-      ]
-    ]
-  ]
-  [
-    set target_bearing (towards min-one-of stags [distance myself]) - heading
-  ]
-
-  ifelse length measured_stag_x-position_list > 3
-      [
-        ifelse target_bearing < -180
-          [
-            set target_bearing target_bearing + 360
-           ]
-          [
-            ifelse target_bearing > 180
-            [set target_bearing target_bearing - 360]
-            [set target_bearing target_bearing]
-          ]
-
-        (ifelse ((target_bearing) > -1 and target_bearing < 1)
-          [set inputs (list (speed-w-noise) 90 0)]
-          (target_bearing) > 1
-          [set inputs (list (speed-w-noise) 90 turning-w-noise)]
-          (target_bearing) < -1
-          [set inputs (list (speed-w-noise) 90 (- turning-w-noise))])
-      ]
-      [
-        set inputs (list (0) 90 (0))
-      ]
-
-end
+;to intercept
+;
+;  if length fov-list-stags > 0
+;  [
+;    ifelse length measured_stag_x-position_list > 100
+;      [
+;       set measured_stag_x-position_list remove-item 0 measured_stag_x-position_list
+;        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
+;       ]
+;      [
+;        set measured_stag_x-position_list lput ([xcor] of stag 0) measured_stag_x-position_list
+;      ]
+;
+;    ifelse length measured_stag_y-position_list > 100
+;      [
+;       set measured_stag_y-position_list remove-item 0 measured_stag_y-position_list
+;        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
+;       ]
+;      [
+;        set measured_stag_y-position_list lput ([ycor] of stag 0) measured_stag_y-position_list
+;      ]
+;
+;    ifelse length measured_stag_time_list > 100
+;      [
+;       set measured_stag_time_list remove-item 0 measured_stag_time_list
+;        set measured_stag_time_list lput (ticks) measured_stag_time_list
+;       ]
+;      [
+;        set measured_stag_time_list lput (ticks) measured_stag_time_list
+;      ]
+;  ]
+;
+;  ifelse length measured_stag_x-position_list > 3
+;  [
+;    let delta-x (last measured_stag_x-position_list - item (length measured_stag_x-position_list - 2) measured_stag_x-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
+;    let delta-y (last measured_stag_y-position_list - item (length measured_stag_y-position_list - 2) measured_stag_y-position_list) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list)
+;
+;
+;    set predicted_stag_speed sqrt (delta-x ^ 2 + delta-y ^ 2)
+;    if not (delta-x = 0 and delta-y = 0)
+;      [set predicted_stag_heading atan delta-x delta-y]
+;
+;    set predicted_stag_ang-velocity ((predicted_stag_heading - old_predicted_stag_heading) / (last measured_stag_time_list - item (length measured_stag_time_list - 2) measured_stag_time_list))
+;
+;    set old_predicted_stag_heading predicted_stag_heading
+;
+;
+;  ]
+;  [
+;    set predicted_stag_speed 0
+;    set predicted_stag_heading 0
+;  ]
+;
+;  ifelse length predicted_stag_speed_list > 100
+;    [
+;     set predicted_stag_speed_list remove-item 0 predicted_stag_speed_list
+;      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
+;     ]
+;    [
+;      set predicted_stag_speed_list lput predicted_stag_speed predicted_stag_speed_list
+;    ]
+;
+;  ifelse length predicted_stag_ang-velocity_list > 100
+;    [
+;     set predicted_stag_ang-velocity_list remove-item 0 predicted_stag_ang-velocity_list
+;      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
+;     ]
+;    [
+;      set predicted_stag_ang-velocity_list lput predicted_stag_ang-velocity predicted_stag_ang-velocity_list
+;    ]
+;
+;
+;  if length measured_stag_x-position_list > 3
+;  [place-cues]
+;
+;  let target_bearing (0) - heading
+;
+;
+;
+;  ifelse lead_stag?
+;  [
+;;    let target-cue (max-one-of (cues with [[ycor] of self < [ycor] of stag 0]) [distance stag 0] )
+;    let target-cue min-one-of cues [abs(distance stag 0 - distance myself)]
+;    ask target-cue
+;    [set color blue]
+;    ifelse distance min-one-of stags [distance myself] < (0.5 * predicted_stag_speed * meters-per-patch)
+;    [
+;      set target_bearing (towards min-one-of stags [distance myself]) - heading
+;    ]
+;    [
+;      ifelse length measured_stag_x-position_list <= 3
+;      [
+;        set target_bearing (0) - heading
+;      ]
+;      [
+;        set target_bearing (towards target-cue ) - heading
+;
+;      ]
+;    ]
+;  ]
+;  [
+;    set target_bearing (towards min-one-of stags [distance myself]) - heading
+;  ]
+;
+;  ifelse length measured_stag_x-position_list > 3
+;      [
+;        ifelse target_bearing < -180
+;          [
+;            set target_bearing target_bearing + 360
+;           ]
+;          [
+;            ifelse target_bearing > 180
+;            [set target_bearing target_bearing - 360]
+;            [set target_bearing target_bearing]
+;          ]
+;
+;        (ifelse ((target_bearing) > -1 and target_bearing < 1)
+;          [set inputs (list (speed-w-noise) 90 0)]
+;          (target_bearing) > 1
+;          [set inputs (list (speed-w-noise) 90 turning-w-noise)]
+;          (target_bearing) < -1
+;          [set inputs (list (speed-w-noise) 90 (- turning-w-noise))])
+;      ]
+;      [
+;        set inputs (list (0) 90 (0))
+;      ]
+;
+;end
 
 to intercept-updated
 
@@ -1284,13 +1288,13 @@ to intercept-updated
 
   let my_speed speed-w-noise * tick-delta
 
-  set my_target min-one-of stags [distance myself]
+  set my_target min-one-of waypoints [distance myself]
 
 
 
   ifelse lead_stag?
   [
-    set viable_cues cues with [ time-from-stag  > distance myself / my_speed]
+    set viable_cues cues with [ time-from-waypoint  > distance myself / my_speed]
     ask viable_cues
     [
       set color blue
@@ -1299,8 +1303,8 @@ to intercept-updated
     ifelse count viable_cues > 0
     [
 ;      set my_target min-one-of viable_cues [who]
-;      set my_target max-one-of viable_cues [time-from-stag - (distance myself / my_speed) ]
-;      set my_target min-one-of viable_cues [abs((distance myself / my_speed) - time-from-stag)]
+;      set my_target max-one-of viable_cues [time-from-waypoint - (distance myself / my_speed) ]
+;      set my_target min-one-of viable_cues [abs((distance myself / my_speed) - time-from-waypoint)]
        set my_target min-one-of viable_cues [distance myself]
     ]
     [
@@ -1308,9 +1312,9 @@ to intercept-updated
     ]
 
 ;    set my_target max-one-of cues [distance stag 0]
-    if distance min-one-of stags [distance myself] < 100 / meters-per-patch
+    if distance min-one-of waypoints [distance myself] < 100 / meters-per-patch
     [
-      set my_target min-one-of stags [distance myself]
+      set my_target min-one-of waypoints [distance myself]
     ]
 
     ask my_target
@@ -1321,7 +1325,7 @@ to intercept-updated
   ]
   [
 
-      set my_target min-one-of stags [distance myself]
+      set my_target min-one-of waypoints [distance myself]
   ]
 
   set target_bearing towards my_target - heading
@@ -1749,7 +1753,161 @@ ask cues with [(who - (count stags + count launch-points + count traps + count d
 end
 
 
-to predict_reachability_set2
+to predict_reachability_set_waypoint
+  let waypoint_id (count stags + count launch-points + count dogs + count old-dogs + count traps)
+  let distance-remaining [distancexy item 0 stag_target item 1 stag_target] of waypoint waypoint_id
+
+  let number-of-predictions 1;(count cues)
+
+  let prediction-spacing distance-remaining / number-of-predictions
+
+  let prediction-spacing_time (prediction-spacing / (speed-stags / meters-per-patch * tick-delta))
+
+  set prediction-spacing_time  (prediction-spacing_time  - (prediction-spacing_time mod count cues))
+
+  let current-x [xcor] of waypoint waypoint_id
+  let current-y [ycor] of waypoint waypoint_id
+  let current-heading [heading] of waypoint waypoint_id
+
+  let predicted_x current-x
+  let predicted_y current-y
+  let predicted_heading current-heading
+  let predicted_heading-offset 0
+  let predicted-turning-input 0
+
+
+  let max_speed speed-stags * tick-delta / meters-per-patch
+  let max-ang-velocity turning-rate-stags * tick-delta
+
+  let tt 0
+
+  set predicted_stag_state_list (list )
+
+
+
+
+  while [ tt < prediction-spacing_time ]
+          [
+
+
+            set predicted_heading predicted_heading + (predicted-turning-input )
+            set predicted_x predicted_x + (max_speed * sin(predicted_heading) )
+            set predicted_y predicted_y + (max_speed * cos(predicted_heading) )
+
+            set predicted_heading-offset 180 - predicted_heading
+
+            ifelse predicted_heading-offset < -180
+            [
+              set predicted_heading-offset predicted_heading-offset + 360
+            ]
+            [
+              ifelse predicted_heading-offset > 180
+              [set predicted_heading-offset predicted_heading-offset - 360]
+              [set predicted_heading-offset predicted_heading-offset]
+            ]
+
+            (ifelse ((predicted_heading-offset) > -1 and predicted_heading-offset < 1)
+            [set predicted-turning-input 0]
+            (predicted_heading-offset) > 1
+            [set predicted-turning-input max-ang-velocity]
+            (predicted_heading-offset) < -1
+            [set predicted-turning-input (- max-ang-velocity)])
+
+            if tt mod (prediction-spacing_time / count cues) = 0
+            [
+              set predicted_stag_state_list lput (list predicted_x predicted_y predicted_heading)predicted_stag_state_list
+            ]
+
+
+            set tt tt + 1
+          ]
+
+   set i (count stags + count launch-points + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
+
+   let max_i (count stags + count launch-points + count traps + count dogs + count old-dogs + count place-holders + count waypoints)
+
+   while [i < (max_i + (count cues ))]
+    [
+      ask cue i
+      [
+        set color red
+        palette:set-transparency ( 100 * ((i - max_i) / count cues))
+;        st
+        set passed_flag 0
+
+        let cue_state_info item ( i - max_i) predicted_stag_state_list
+
+
+        let cue-x (item 0 cue_state_info)
+        let cue-y (item 1 cue_state_info)
+        let cue-heading (item 2 cue_state_info)
+
+
+        if cue-x > max-pxcor
+         [
+           set cue-x max-pxcor
+           ifelse cue-y-out = "N/A"
+            [
+              set cue-y-out cue-y
+              set cue-y cue-y-out
+            ]
+            [set cue-y cue-y-out]
+
+         ]
+
+        if cue-x < min-pxcor
+        [
+          set cue-x min-pxcor
+          ifelse cue-y-out = "N/A"
+            [
+              set cue-y-out cue-y
+              set cue-y cue-y-out
+            ]
+            [set cue-y cue-y-out]
+        ]
+
+        if cue-y > max-pycor
+         [
+           set cue-y max-pycor
+           ifelse cue-x-out = "N/A"
+            [
+              set cue-x-out cue-x
+              set cue-x cue-x-out
+            ]
+            [set cue-x cue-x-out]
+         ]
+
+        if cue-y < min-pycor
+        [
+          set cue-y min-pycor
+          ifelse cue-x-out = "N/A"
+            [
+              set cue-x-out cue-x
+              set cue-x cue-x-out
+            ]
+            [set cue-x cue-x-out]
+        ]
+
+        setxy cue-x cue-y
+        set heading cue-heading
+
+
+        set dist-to-waypoint distance waypoint waypoint_id
+        set time-from-waypoint (dist-to-waypoint / max_speed)
+
+
+      ]
+      set i i + 1
+
+    ]
+    set cue-x-out "N/A"
+  set cue-y-out "N/A"
+
+
+end
+
+to predict_reachability_set_stag
+
   let distance-remaining [distancexy item 0 stag_target item 1 stag_target] of stag 0
 
   let number-of-predictions 1;(count cues)
@@ -1887,8 +2045,8 @@ to predict_reachability_set2
         set heading cue-heading
 
 
-        set dist-to-stag distance stag 0
-        set time-from-stag (dist-to-stag / max_speed)
+        set dist-to-waypoint distance stag 0
+        set time-from-waypoint (dist-to-waypoint / max_speed)
 
 
       ]
@@ -1936,6 +2094,11 @@ to go_to_south_goal ; stag attempts to drive its heading towards the south end o
    [
      if ticks mod 600 = 0 ; every 3000 ticks (300 seconds) the stag's target is moved slightly at random to mix up approach
      [set stag_target (list (xcor + (one-of (range (-1) (2) 1)) * (150 / meters-per-patch)) min-pycor) ]
+    ask waypoint (count stags + count launch-points + count dogs + count old-dogs + count traps)
+    [
+      set stag_target [stag_target] of self
+    ]
+
    ]
    [
      set stag_target (list xcor min-pycor)
@@ -2242,7 +2405,7 @@ to set_waypoint
       st
       setxy ([xcor] of stag 0) 0
 
-
+     set stag_target (list xcor min-pycor)
 
 
       set shape "x"
@@ -2258,6 +2421,17 @@ to update_waypoint
     ask waypoints
     [
      setxy ([xcor] of stag 0) ([ycor] of stag 0);(([ycor] of stag 0 + min-pycor) / 2)
+      set heading [heading] of stag 0
+
+
+     if distance min-one-of cues [distance myself] < (10 / meters-per-patch)
+      [
+        ask min-one-of cues [distance myself]
+        [
+          set passed_flag 1
+        ]
+      ]
+         predict_reachability_set_waypoint
     ]
   ]
 end
@@ -2682,10 +2856,10 @@ to make_stag
     if rand_x < min-pxcor
     [set rand_x (min-pxcor + 0.15)]
 
-;    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
+    setxy (rand_x) ((max-pycor - 1)- (90 / meters-per-patch) / 2)
 
 ;    setxy start_stag_x ((max-pycor - 1)- (90 / meters-per-patch) / 2)
-    setxy start_stag_x 19.5
+;    setxy start_stag_x 19.5
 
      set heading 180
 
@@ -3806,7 +3980,7 @@ seed-no
 seed-no
 1
 150
-3.0
+19.0
 1
 1
 NIL
@@ -3947,7 +4121,7 @@ SWITCH
 127
 paint_fov?
 paint_fov?
-1
+0
 1
 -1000
 
@@ -4005,7 +4179,7 @@ number-of-traps
 number-of-traps
 0
 40
-0.0
+10.0
 1
 1
 NIL
@@ -4590,7 +4764,7 @@ SWITCH
 59
 auto_set?
 auto_set?
-1
+0
 1
 -1000
 
@@ -4614,7 +4788,7 @@ update_time
 update_time
 5
 300
-20.0
+210.0
 5
 1
 sec
@@ -4640,7 +4814,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-0.0
+5.0
 1
 1
 NIL
@@ -4655,7 +4829,7 @@ speed-old-dogs
 speed-old-dogs
 0
 10
-2.2
+3.0
 0.1
 1
 m/s
@@ -4711,8 +4885,8 @@ SLIDER
 start_stag_x
 start_stag_x
 -20
-21
--1.0
+20
+-15.9
 0.1
 1
 NIL
@@ -4765,7 +4939,7 @@ dog_start_y
 dog_start_y
 -20
 21
-20.0
+0.0
 0.25
 1
 NIL
