@@ -3980,7 +3980,7 @@ seed-no
 seed-no
 1
 150
-19.0
+20.0
 1
 1
 NIL
@@ -4788,7 +4788,7 @@ update_time
 update_time
 5
 300
-210.0
+0.0
 5
 1
 sec
@@ -5508,7 +5508,13 @@ NetLogo 6.4.0
     <timeLimit steps="19500"/>
     <exitCondition>end_flag &gt; 0</exitCondition>
     <metric>win-loss-val</metric>
-    <steppedValueSet variable="number-of-dogs" first="0" step="1" last="3"/>
+    <enumeratedValueSet variable="update_time">
+      <value value="1"/>
+      <value value="5"/>
+      <value value="30"/>
+      <value value="60"/>
+      <value value="120"/>
+    </enumeratedValueSet>
     <steppedValueSet variable="number-of-old-dogs" first="0" step="1" last="10"/>
     <steppedValueSet variable="number-of-traps" first="2" step="2" last="20"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
