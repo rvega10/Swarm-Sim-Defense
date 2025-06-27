@@ -1302,10 +1302,10 @@ to intercept-updated
 
     ifelse count viable_cues > 0
     [
-;      set my_target min-one-of viable_cues [who]
+      set my_target min-one-of viable_cues [who]
 ;      set my_target max-one-of viable_cues [time-from-waypoint - (distance myself / my_speed) ]
 ;      set my_target min-one-of viable_cues [abs((distance myself / my_speed) - time-from-waypoint)]
-       set my_target min-one-of viable_cues [distance myself]
+;       set my_target min-one-of viable_cues [distance myself]
     ]
     [
        set my_target min-one-of cues [distance myself]
@@ -3980,7 +3980,7 @@ seed-no
 seed-no
 1
 150
-20.0
+24.0
 1
 1
 NIL
@@ -4372,10 +4372,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-529
-202
-706
-235
+926
+658
+1103
+691
 number-of-stags
 number-of-stags
 0
@@ -4387,10 +4387,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-521
-343
-740
-376
+918
+777
+1137
+810
 vision-distance-stags
 vision-distance-stags
 0
@@ -4402,10 +4402,10 @@ m
 HORIZONTAL
 
 SLIDER
-520
-382
-732
-415
+917
+816
+1129
+849
 vision-cone-stags
 vision-cone-stags
 0
@@ -4417,10 +4417,10 @@ deg
 HORIZONTAL
 
 SLIDER
-524
-243
-718
-276
+921
+699
+1115
+732
 speed-stags
 speed-stags
 0
@@ -4432,10 +4432,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-523
-283
-734
-316
+920
+739
+1131
+772
 turning-rate-stags
 turning-rate-stags
 0
@@ -4447,10 +4447,10 @@ deg/s
 HORIZONTAL
 
 CHOOSER
-517
-150
-725
-195
+914
+606
+1122
+651
 selected_algorithm_stag
 selected_algorithm_stag
 "Auto" "Manual Control" "Better-Auto"
@@ -4478,10 +4478,10 @@ Trap_setup
 7
 
 BUTTON
-575
-614
-658
-648
+607
+654
+690
+688
 Forward
 ask stags [ set inputs (list (speed-stags / meters-per-patch) 90 0)]
 NIL
@@ -4495,10 +4495,10 @@ NIL
 1
 
 BUTTON
-575
-661
-655
-695
+607
+701
+687
+735
 Reverse
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 270 0)]
 NIL
@@ -4512,10 +4512,10 @@ NIL
 1
 
 BUTTON
-585
-711
-649
-745
+617
+751
+681
+785
 Stop
 ask stags[ set inputs (list 0 0 0)]
 NIL
@@ -4529,10 +4529,10 @@ NIL
 1
 
 BUTTON
-667
-661
-765
-695
+699
+701
+797
+735
 Turn Right
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 90 turning-rate-stags)]
 NIL
@@ -4546,10 +4546,10 @@ NIL
 1
 
 BUTTON
-474
-665
-563
-699
+506
+705
+595
+739
 Turn Left
 ask stags[ set inputs (list (speed-stags / meters-per-patch) 90 (- turning-rate-stags))]
 NIL
@@ -4574,10 +4574,10 @@ loop_sim?
 -1000
 
 TEXTBOX
-478
-592
-856
-611
+510
+632
+888
+651
 Controls for 'selected_algorithm_stag' = Manual Control
 11
 0.0
@@ -4609,25 +4609,25 @@ for spiral algorithm
 1
 
 SLIDER
-273
-203
-445
-236
+277
+208
+449
+241
 number-of-dogs
 number-of-dogs
 0
 5
-1.0
+0.0
 1
 1
 NIL
 HORIZONTAL
 
 SWITCH
-285
-448
-437
-481
+398
+880
+550
+913
 lead_stag?
 lead_stag?
 0
@@ -4635,10 +4635,10 @@ lead_stag?
 -1000
 
 SLIDER
-272
-367
-482
-400
+276
+322
+486
+355
 vision-distance-dogs
 vision-distance-dogs
 0
@@ -4650,10 +4650,10 @@ m
 HORIZONTAL
 
 SLIDER
-272
-409
-464
-442
+276
+364
+468
+397
 vision-cone-dogs
 vision-cone-dogs
 0
@@ -4665,10 +4665,10 @@ deg
 HORIZONTAL
 
 SLIDER
-273
-242
-445
-275
+277
+247
+449
+280
 speed-dogs
 speed-dogs
 0
@@ -4680,10 +4680,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-273
-279
-482
-312
+277
+284
+486
+317
 turning-rate-dogs
 turning-rate-dogs
 0
@@ -4729,22 +4729,11 @@ TEXTBOX
 0.0
 1
 
-SWITCH
-276
-332
-454
-365
-dog_local_sensing?
-dog_local_sensing?
-1
-1
--1000
-
 BUTTON
-599
-25
-709
-58
+579
+33
+689
+66
 Set Waypoint
 set_waypoint
 NIL
@@ -4758,10 +4747,10 @@ NIL
 1
 
 SWITCH
-714
-26
-830
-59
+694
+34
+810
+67
 auto_set?
 auto_set?
 0
@@ -4788,17 +4777,17 @@ update_time
 update_time
 5
 300
-0.0
+120.0
 5
 1
 sec
 HORIZONTAL
 
 SWITCH
-732
-205
-896
-238
+1129
+661
+1293
+694
 shifting_stag_target?
 shifting_stag_target?
 0
@@ -4806,60 +4795,60 @@ shifting_stag_target?
 -1000
 
 SLIDER
-741
-708
-919
-741
+498
+206
+676
+239
 number-of-old-dogs
 number-of-old-dogs
 0
 30
-5.0
+8.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-746
-754
-933
-787
+503
+252
+690
+285
 speed-old-dogs
 speed-old-dogs
 0
 10
-3.0
+2.3
 0.1
 1
 m/s
 HORIZONTAL
 
 CHOOSER
-716
-793
-959
-838
+499
+153
+696
+198
 old-dog-algorithm
 old-dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally" "Moving Wall"
 4
 
 TEXTBOX
-785
-240
-858
-285
+1152
+615
+1225
+660
 adds a bit of disturbance to stag
 11
 0.0
 1
 
 SWITCH
-327
-156
-491
-189
+41
+778
+205
+811
 beacon_sensors?
 beacon_sensors?
 1
@@ -4867,10 +4856,10 @@ beacon_sensors?
 -1000
 
 SWITCH
-622
-444
-802
-477
+296
+586
+476
+619
 constant_travel_range?
 constant_travel_range?
 1
@@ -4878,10 +4867,10 @@ constant_travel_range?
 -1000
 
 SLIDER
-579
-550
-751
-583
+406
+957
+578
+990
 start_stag_x
 start_stag_x
 -20
@@ -4892,55 +4881,82 @@ start_stag_x
 NIL
 HORIZONTAL
 
-PLOT
-1049
-585
-1249
-735
-Distance from Old-Dog to Stag
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" ""
-
 CHOOSER
-289
-493
-491
-538
+275
+150
+477
+195
 dog-algorithm
 dog-algorithm
 "Decoy" "Intercept" "Follow Waypoints" "Follow Waypoints - Horizontally"
 1
 
 CHOOSER
-862
-624
-1040
-669
+513
+301
+691
+346
 old-dog-setup
 old-dog-setup
 "Evenly-Spaced Picket" "Center Gap Picket" "Edge Gap Picket" "Slant Picket"
 3
 
 SLIDER
-587
-504
-759
-537
+406
+917
+578
+950
 dog_start_y
 dog_start_y
 -20
 21
 0.0
 0.25
+1
+NIL
+HORIZONTAL
+
+SLIDER
+11
+394
+206
+427
+chance_of_failure_trap
+chance_of_failure_trap
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+279
+408
+473
+441
+chance_of_failure_dog
+chance_of_failure_dog
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+507
+408
+727
+441
+chance_of_failure_old-dog
+chance_of_failure_old-dog
+0
+100
+50.0
+1
 1
 NIL
 HORIZONTAL
