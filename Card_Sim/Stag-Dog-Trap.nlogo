@@ -82,6 +82,7 @@ traps-own [
            fov-list-old-dogs
            energy
            range_status
+           failure-mode
           ]
 dogs-own [
           velocity
@@ -141,6 +142,7 @@ dogs-own [
            my_target
            energy
            range_status
+           failure-mode
           ]
 
 old-dogs-own [
@@ -201,6 +203,7 @@ old-dogs-own [
            my_target
            energy
            range_status
+           failure-mode
           ]
 
 
@@ -480,17 +483,27 @@ to go
 
  ask traps
     [
-      trap_procedure
+      flip-for-failure
+      ifelse failure-mode = 1
+        [ set inputs (list 0 0 0)]
+        [trap_procedure]
+
     ]
 
   ask dogs
     [
-      dog_procedure
+      flip-for-failure
+      ifelse failure-mode = 1
+        [ set inputs (list 0 0 0)]
+        [dog_procedure]
     ]
 
   ask old-dogs
     [
-      old-dog_procedure
+      flip-for-failure
+      ifelse failure-mode = 1
+        [ set inputs (list 0 0 0)]
+         [old-dog_procedure]
     ]
 
   ask launch-points
@@ -730,7 +743,24 @@ to measure_results
 
 end
 
+to flip-for-failure
+  let failure-likelihood 0
+   if breed = traps
+    [set failure-likelihood chance_of_failure_trap]
+   if breed = dogs
+    [set failure-likelihood chance_of_failure_dog]
+   if breed = old-dogs
+    [set failure-likelihood chance_of_failure_old-dog]
 
+  if ticks mod 1500 = 0 and (ticks != 0)
+  [
+   if random 100 < failure-likelihood
+   [
+    set failure-mode 1
+   ]
+  ]
+
+end
 
 to stag_procedure
   ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
@@ -777,6 +807,7 @@ to stag_procedure
  update_agent_state; updates states of agents (i.e. position and heading)
 
 end
+
 
 to smart_stag_procedure
 
@@ -2420,8 +2451,48 @@ to update_waypoint
   [
     ask waypoints
     [
-     setxy ([xcor] of stag 0) ([ycor] of stag 0);(([ycor] of stag 0 + min-pycor) / 2)
-      set heading [heading] of stag 0
+
+     let true-stag-x ([xcor] of stag 0)
+     let true-stag-y ([ycor] of stag 0)
+     let true-stag-heading [heading] of stag 0
+
+;     let x-rand random-normal 0 0.25 ;
+;      while [abs(x-rand) > 0.5]
+;      [ set x-rand random-normal 0 0.25 ]
+      let x-rand 0
+
+;     let y-rand random-normal 0 0.25 ;
+;      while [abs(y-rand) > 0.5]
+;      [set  y-rand random-normal 0 0.25 ]
+      let y-rand 0
+;     let heading-rand random-normal 0 7 ;
+     let heading-rand 0
+
+
+
+     let waypoint-x (true-stag-x + x-rand)
+     if waypoint-x > max-pxcor
+      [
+        set waypoint-x max-pxcor
+      ]
+     if waypoint-x < min-pxcor
+      [
+        set waypoint-x min-pxcor
+      ]
+
+     let waypoint-y (true-stag-y + y-rand)
+     if waypoint-y > max-pycor
+      [
+        set waypoint-y max-pycor
+      ]
+     if waypoint-y < min-pycor
+      [
+        set waypoint-y min-pycor
+      ]
+
+
+     setxy waypoint-x waypoint-y
+     set heading (true-stag-heading + heading-rand)
 
 
      if distance min-one-of cues [distance myself] < (10 / meters-per-patch)
@@ -3980,7 +4051,7 @@ seed-no
 seed-no
 1
 150
-24.0
+34.0
 1
 1
 NIL
@@ -4562,17 +4633,6 @@ NIL
 NIL
 1
 
-SWITCH
-299
-30
-418
-63
-loop_sim?
-loop_sim?
-1
-1
--1000
-
 TEXTBOX
 510
 632
@@ -4617,7 +4677,7 @@ number-of-dogs
 number-of-dogs
 0
 5
-0.0
+1.0
 1
 1
 NIL
@@ -4777,7 +4837,7 @@ update_time
 update_time
 5
 300
-120.0
+5.0
 5
 1
 sec
@@ -4803,7 +4863,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-8.0
+6.0
 1
 1
 NIL
@@ -4925,7 +4985,7 @@ chance_of_failure_trap
 chance_of_failure_trap
 0
 100
-50.0
+0.0
 1
 1
 NIL
@@ -4940,7 +5000,7 @@ chance_of_failure_dog
 chance_of_failure_dog
 0
 100
-50.0
+0.0
 1
 1
 NIL
@@ -4955,11 +5015,22 @@ chance_of_failure_old-dog
 chance_of_failure_old-dog
 0
 100
-50.0
+0.0
 1
 1
 NIL
 HORIZONTAL
+
+SWITCH
+299
+30
+418
+63
+loop_sim?
+loop_sim?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
