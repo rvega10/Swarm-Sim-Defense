@@ -253,7 +253,11 @@ stags-own [
            adversary_set_minor_warning
            adversary_set_danger
            adversary_total_list
+           adversary_set_immediate_proximity
            body_width
+           fov-list-encroaching-adversaries-dogs
+           fov-list-encroaching-adversaries-old-dogs
+           fov-list-encroaching-adversaries
 
           ]
 
@@ -565,6 +569,7 @@ ifelse paint_fov?
     ask stags
       [
         display_FOV
+        display-danger-zone
       ]
 
     ask dogs
@@ -717,6 +722,30 @@ to display_FOV ;procedure that uses fake agents to display FOV rather than paint
 
 end
 
+to display-danger-zone ;procedure that uses fake agents to display FOV rather than painting patches (if the fov is certain values)
+
+
+  if count discs with [my_turtle = [who] of myself and [color] of self = pink] = 0
+  [
+        hatch-discs 1
+        [
+          set size 2 * (danger-proximity-range / meters-per-patch)
+          set heading ([heading] of myself)
+          palette:set-transparency 90
+          set my_turtle  [who] of myself
+          set color pink
+        ]
+
+  ]
+  ask discs with [my_turtle = [who] of myself]
+  [
+    setxy ([xcor] of myself) ([ycor] of myself)
+   set heading ([heading] of myself)
+    st
+  ]
+
+end
+
 to measure_results
 
     if time-of-stag-escape = 0
@@ -762,51 +791,6 @@ to flip-for-failure
 
 end
 
-to stag_procedure
-  ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
-   set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
-  do_sensing ; does the sensing to detect whatever the stag is set to detect
-
-  ifelse response_duration_count > 0 ; if value is positive, it performs whatever the response is (i.e. if set to 'turn-away" it will make sure it turns in place for a full second even if it detects something else)
-    [
-      response_procedure ; if agent is detected, it stops everything and executes the desired algorithm for one second
-
-      set response_duration_count (response_duration_count - 1) ;counts down
-      set color red
-    ]
-    [
-     ifelse length fov-list-traps > 0  or length fov-list-dogs > 0 or length fov-list-old-dogs > 0; if one or more traps/dogs are detected, it reacts according to whatever the selected algorithm is (default is to turn away)
-       [
-         set response_type "turn-away"
-         set response_duration_count 1;
-       ]
-       [
-
-;          ifelse ticks mod 1200 = 0 ; every 1200 ticks (120 seconds) the stag is "affected" by wind, changing its heading slightly
-;            [
-;              if random 100 < 50 ; if random value is less than 10 then the stag turns in a random direction for a short period of time (i.e. the stag turns randomly with a chance of 10 %)
-;              [
-;               choose_rand_turn
-;               set response_type "Random Turn"
-;               set response_duration_count (60 / tick-delta) ;perform response type for 10 second
-;              ]
-;            ]
-;            [
-            ;if nothing is detected, stag goes "to goal" which in this case means it goes to the Southern Edge
-             go_to_south_goal
-             set color red
-;            ]
-
-
-
-       ]
-   ]
-
-
-
- update_agent_state; updates states of agents (i.e. position and heading)
-
-end
 
 
 to smart_stag_procedure
@@ -814,6 +798,7 @@ to smart_stag_procedure
   ; setting the actuating and sensing variables every time step allows these values to be updated during the sim rather than only at the beginnning
    set_actuating_variables ;does the procedure to set the speed,turning rate, and state-disturbance
   do_sensing ; does the sensing to detect whatever the stag is set to detect
+  find-encroaching-advesaries-in-FOV;  detects dogs and old-dogs in r-disk region
 
 
   set adversary_total_list (list )
@@ -823,11 +808,13 @@ to smart_stag_procedure
   let nearest_hostile (max-one-of place-holders [distance myself])
 
 
-  set adversary_total_list (sentence fov-list-dogs fov-list-old-dogs fov-list-traps)
+  set adversary_total_list (sentence fov-list-dogs fov-list-old-dogs fov-list-traps fov-list-encroaching-adversaries-dogs fov-list-encroaching-adversaries-old-dogs)
 
   set adversary_set turtle-set map [b -> b] adversary_total_list
 
   let  danger_angle (2 * asin (2 * body_width / vision-dd)) ; calculation of how much the opening-angle should be to maintain a "safe margin" of 3 times the body width
+
+  set adversary_set_immediate_proximity adversary_set in-radius (danger-proximity-range / meters-per-patch)
 
   set adversary_set_danger adversary_set in-cone vision-dd 10;danger_angle
 
@@ -835,7 +822,30 @@ to smart_stag_procedure
 
   set adversary_set_minor_warning adversary_set in-cone vision-dd 60
 
-  (ifelse count adversary_set_danger > 0
+
+
+  (
+  ifelse count adversary_set_immediate_proximity > 0
+  [
+    set nearest_hostile min-one-of adversary_set_immediate_proximity [distance myself]
+    let nearest_hostile_bearing towards nearest_hostile - heading
+
+    ifelse nearest_hostile_bearing < -180
+      [
+        set nearest_hostile_bearing nearest_hostile_bearing + 360
+       ]
+      [
+        ifelse nearest_hostile_bearing > 180
+        [set nearest_hostile_bearing nearest_hostile_bearing - 360]
+        [set nearest_hostile_bearing nearest_hostile_bearing]
+      ]
+
+    ifelse (nearest_hostile_bearing) > 0
+      [set inputs (list (speed-w-noise) 90(- turning-w-noise))]
+      [set inputs (list (speed-w-noise) 90( turning-w-noise))]
+
+  ]
+  count adversary_set_danger > 0
   [
     set nearest_hostile min-one-of adversary_set_danger [distance myself]
     let nearest_hostile_bearing towards nearest_hostile - heading
@@ -2668,6 +2678,8 @@ to do_sensing
     [find-old-dogs-in-FOV ]
     [set fov-list-old-dogs (list)]
 
+
+
 end
 
 to update_agent_state
@@ -2916,6 +2928,9 @@ to make_stag
       set fov-list-stags (list )
       set fov-list-dogs (list)
       set adversary_total_list (list )
+      set fov-list-encroaching-adversaries-dogs (list )
+      set fov-list-encroaching-adversaries-old-dogs (list )
+      set fov-list-encroaching-adversaries (list )
 
       set furthest_ycor min-pycor
 
@@ -3494,6 +3509,8 @@ to find-dogs-in-FOV
       ]
 end
 
+
+
 to find-old-dogs-in-FOV
   let vision-dd 0
   let vision-cc 0
@@ -3591,6 +3608,32 @@ to find-traps-in-FOV
      set i (i + 1)
       ]
 end
+
+to find-encroaching-advesaries-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self traps
+    [
+      set vision-dd vision-distance-traps
+      set vision-cc vision-cone-traps
+    ]
+    [
+      set vision-dd vision-distance-stags
+    set vision-cc vision-cone-stags
+    ]
+
+  set i (count stags)
+
+  set fov-list-encroaching-adversaries-dogs sort dogs in-radius (danger-proximity-range / meters-per-patch)
+  set fov-list-encroaching-adversaries-old-dogs sort old-dogs in-radius (danger-proximity-range / meters-per-patch)
+
+
+
+
+end
+
 
 
 to beacon_sensing
@@ -4051,7 +4094,7 @@ seed-no
 seed-no
 1
 150
-34.0
+11.0
 1
 1
 NIL
@@ -4203,7 +4246,7 @@ SWITCH
 125
 draw_path?
 draw_path?
-0
+1
 1
 -1000
 
@@ -4250,7 +4293,7 @@ number-of-traps
 number-of-traps
 0
 40
-10.0
+5.0
 1
 1
 NIL
@@ -4524,7 +4567,7 @@ CHOOSER
 651
 selected_algorithm_stag
 selected_algorithm_stag
-"Auto" "Manual Control" "Better-Auto"
+"Auto" "Manual Control"
 0
 
 MONITOR
@@ -4755,9 +4798,9 @@ deg/s
 HORIZONTAL
 
 SLIDER
-431
+428
 30
-571
+564
 63
 meters-per-patch
 meters-per-patch
@@ -4770,9 +4813,9 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-439
+440
 10
-589
+590
 28
 Scales Simulation
 11
@@ -4863,7 +4906,7 @@ number-of-old-dogs
 number-of-old-dogs
 0
 30
-6.0
+5.0
 1
 1
 NIL
@@ -4878,7 +4921,7 @@ speed-old-dogs
 speed-old-dogs
 0
 10
-2.3
+3.0
 0.1
 1
 m/s
@@ -5031,6 +5074,21 @@ loop_sim?
 1
 1
 -1000
+
+SLIDER
+928
+862
+1157
+895
+danger-proximity-range
+danger-proximity-range
+0
+2000
+200.0
+50
+1
+m
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
