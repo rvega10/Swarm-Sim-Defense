@@ -163,7 +163,7 @@ to make_dog ;; procedure to create dog and define its variables
   ifelse orientation = "horizontal"
   [
 ;    setxy ( (pos * 1.8 - 0.9) ) 4
-    setxy ( (pos * increment - initial-post) ) 4
+    setxy ( (pos * increment - initial-post) ) -26
     set heading 0
   ]
   [
@@ -200,7 +200,7 @@ to make_sled ;; procedure to create sled and define its variables
   set color green
   set shape "boat"
 
-   setxy 0 0
+   setxy 0 -30
 
   make_upper_right_attachment_point
   make_upper_left_attachment_point
@@ -875,8 +875,8 @@ end
 GRAPHICS-WINDOW
 735
 17
-1618
-901
+1328
+611
 -1
 -1
 7.235
@@ -889,10 +889,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--60
-60
--60
-60
+-40
+40
+-40
+40
 1
 1
 1
@@ -917,10 +917,10 @@ NIL
 1
 
 BUTTON
-109
-24
-172
-57
+105
+22
+168
+55
 NIL
 go
 T
@@ -934,10 +934,10 @@ NIL
 1
 
 SLIDER
-247
-26
-339
-59
+205
+25
+297
+58
 seed-no
 seed-no
 0
@@ -949,10 +949,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-258
-91
-387
-124
+312
+26
+441
+59
 show_path?
 show_path?
 1
@@ -960,10 +960,10 @@ show_path?
 -1000
 
 SLIDER
-1263
-665
-1399
-698
+336
+859
+472
+892
 meters-per-patch
 meters-per-patch
 0
@@ -975,10 +975,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-500
-361
-643
-394
+474
+300
+617
+333
 Angle Motor Right
 angle_motor_right
 NIL
@@ -992,10 +992,10 @@ NIL
 1
 
 BUTTON
-280
-360
-414
-393
+254
+299
+388
+332
 Angle Motor Left
 angle_motor_left
 NIL
@@ -1017,17 +1017,17 @@ number-of-dogs
 number-of-dogs
 0
 10
-4.0
+2.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-43
-168
-215
-201
+27
+128
+199
+161
 rope-length
 rope-length
 0
@@ -1039,10 +1039,10 @@ m
 HORIZONTAL
 
 SLIDER
-762
-670
-942
-703
+149
+860
+329
+893
 rope-stiffness
 rope-stiffness
 0
@@ -1054,10 +1054,10 @@ KN/M
 HORIZONTAL
 
 BUTTON
-401
-97
-502
-130
+454
+28
+555
+61
 Clear Paths
 clear-drawing
 NIL
@@ -1071,10 +1071,10 @@ NIL
 1
 
 BUTTON
-338
-182
-482
-215
+560
+30
+704
+63
 Disconnect Tether
 ask links [die]
 NIL
@@ -1088,10 +1088,10 @@ NIL
 1
 
 SLIDER
-50
-295
-222
-328
+27
+275
+199
+308
 drive_motor
 drive_motor
 0
@@ -1103,10 +1103,10 @@ N
 HORIZONTAL
 
 SLIDER
-59
-368
-231
-401
+25
+314
+197
+347
 motor-angle
 motor-angle
 -30
@@ -1136,10 +1136,10 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 BUTTON
-403
-314
-531
-347
+377
+253
+505
+286
 Increase Thrust
 increase_thrust
 NIL
@@ -1153,10 +1153,10 @@ NIL
 1
 
 BUTTON
-411
-411
-544
-444
+385
+350
+518
+383
 Decrease Thrust
 decrease_thrust
 NIL
@@ -1172,39 +1172,7 @@ NIL
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
-
-## HOW IT WORKS
-
-(what rules the agents use to create the overall behavior of the model)
-
-## HOW TO USE IT
-
-(how to use the model, including a description of each of the items in the Interface tab)
-
-## THINGS TO NOTICE
-
-(suggested things for the user to notice while running the model)
-
-## THINGS TO TRY
-
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
-
-## EXTENDING THE MODEL
-
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
-
-## CREDITS AND REFERENCES
-
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Blank for now
 @#$#@#$#@
 default
 true
