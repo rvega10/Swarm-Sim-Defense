@@ -1186,10 +1186,14 @@ to check_if_touching_stag ; checks to see if the agent is touching the ellipsoid
 
   let ellipse_eq ((my_x_to_stag_frame ^ 2) / (((stag_major_axis_length + my_size)/ 2)^ 2)) + ((my_y_to_stag_frame ^ 2) / (((stag_minor_axis_length + my_size)/ 2)^ 2))
 
-  ifelse ellipse_eq <= 1
+;  ifelse ellipse_eq <= 1
+;  [ set stag_caught_flag 1]
+;  [ set stag_caught_flag 0]
+
+
+  ifelse distance stag 0 < (400 / meters-per-patch)
   [ set stag_caught_flag 1]
   [ set stag_caught_flag 0]
-
 end
 
 
@@ -4094,7 +4098,7 @@ seed-no
 seed-no
 1
 150
-11.0
+13.0
 1
 1
 NIL
@@ -5084,7 +5088,7 @@ danger-proximity-range
 danger-proximity-range
 0
 2000
-200.0
+600.0
 50
 1
 m

@@ -37,8 +37,6 @@ dogs-own [
   a-y-no-tether
   len
   width
-  F-drag-x
-  F-drag-y
   Ftow
   rot-drag-coef
   k-d
@@ -75,8 +73,6 @@ sleds-own[
   a-y-no-tether
   len
   width
-  F-drag-x
-  F-drag-y
   rot-drag-coef
   k-d
   k-d-lateral
@@ -96,6 +92,9 @@ attachment-points-own[
   vx
   vy
   my-side
+  tether-accel-x-sum
+  tether-accel-y-sum
+  tether-accel-ang-sum
 ]
 links-own [
     old-link-color
@@ -162,7 +161,7 @@ to make_dog ;; procedure to create dog and define its variables
 
   ifelse orientation = "horizontal"
   [
-;    setxy ( (pos * 1.8 - 0.9) ) 4
+;    setxy ( (pos * 1.8 - 0.9) ) -26
     setxy ( (pos * increment - initial-post) ) -26
     set heading 0
   ]
@@ -172,7 +171,11 @@ to make_dog ;; procedure to create dog and define its variables
   ]
 
   make_rudder
-  make_rear_attachment_point
+  (ifelse Dog-Connection-Point = "Center"
+     [make_center_attachment_point]
+   Dog-Connection-Point = "Rear"
+    [make_rear_attachment_point]
+  )
 
 end
 
@@ -245,7 +248,13 @@ to make_center_attachment_point
     set attached-to-ID [who] of myself
     set my-side "center"
 
-    create-link-with attachment-point (1 + attached-to-ID mod 2) ;  connect to sled's right side if even or left if odd
+    ifelse (attached-to-ID - 3) / number-of-dogs >= 0.5
+    [
+      create-link-with attachment-point (1) ;  connect to sled's right side if ID is upper half of dog ID's
+    ]
+    [
+      create-link-with attachment-point (2) ;  connect to sled's left side if ID is lower half of dog ID's
+    ]
    ]
 end
 
@@ -385,6 +394,11 @@ to go
       ]
   ]
 
+  ask attachment-point 2
+  [
+    calculate-tether-acceleration
+  ]
+
   tick-advance 1
 end
 
@@ -491,6 +505,106 @@ end
 
 
 
+;to sled_dynamics
+;
+;  calculate_acceleration_without_tether
+;
+;  ;;; tether tow calculations
+;  let D len * 0.3 ; vertical position of attachment point (along length of agent)
+;  let B width * 0.6 ; horizontal  position of attachment point (along length of agent)
+;
+;  let c1 attachment-point count sleds ; right attachment point
+;  let c2 attachment-point (count sleds + 1) ; left attachment point
+;
+;
+;  ifelse [count my-links] of c1 + [count my-links] of c2 > 0 ; only calculate tether force if both attachment points are linked to something
+;  [
+;
+;     let tug1 dog [attached-to-ID] of ([one-of link-neighbors] of c1) ; dog tied to right attachment-points
+;     let tug2 dog [attached-to-ID] of ([one-of link-neighbors] of c2) ; dog tied to left attachment-points
+;
+;     ; set point of attachment of tugs (in case it isn't at the dogs center)
+;     let c_tug1 one-of attachment-points with [attached-to-ID = [who] of tug1]
+;     let c_tug2 one-of attachment-points with [attached-to-ID = [who] of tug2]
+;
+;     ; initialize angle variables
+;     let w1 0
+;     let w2 0
+;
+;     ifelse (- [xcor] of c1 + [xcor] of c_tug1) = 0 and (- [ycor] of c1 + [ycor] of c_tug1) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+;       [set w1 0]
+;       [set w1 (atan (- [xcor] of c1 + [xcor] of c_tug1) (- [ycor] of c1 + [ycor] of c_tug1)) - heading]
+;
+;     ifelse (- [xcor] of c2 + [xcor] of tug2) = 0 and (- [ycor] of c2 + [ycor] of c_tug2) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+;       [set w2 0]
+;       [set w2 (atan (-[xcor] of c2 + [xcor] of c_tug2) (-[ycor] of c2 + [ycor] of c_tug2))  - heading]
+;
+;     ; wrap angle to be within [-180, 180)
+;     set w1 angle_wrap w1
+;     set w2 angle_wrap w2
+;
+;
+;
+;
+;     let Dgp1 (D - (B * 0.5)*(tan(w1)))* sin(w1) ; arm of force on c1 to the center of gravity
+;     let Dgp2 (D - (B * 0.5)*(tan(w2)))* sin(w2) ; arm of force on c2 to the center of gravity
+;
+;    ;initialize tow forces locally
+;     let Ftow1 0
+;     let Ftow2 0
+;
+;     ifelse [distance c_tug1] of c1 > (rope-length / meters-per-patch)  ; only enact force if the rope is "taut"
+;     [
+;       set Ftow1 [Ftow] of tug1
+;     ]
+;     [
+;       set Ftow1 0
+;     ]
+;
+;     ifelse [distance c_tug2] of c2 > (rope-length / meters-per-patch) ; only enact force if the rope is "taut"
+;     [
+;       set Ftow2 [Ftow] of tug2
+;     ]
+;     [
+;       set Ftow2 0
+;     ]
+;
+;     ; calculate acceleration components from tether in body frame
+;     let tether-accel-x1 (Ftow1 * cos(w1) + Ftow2 * cos(w2)) / mass
+;     let tether-accel-y1 (Ftow1 * sin(w1) + Ftow2 * sin(w2)) / mass
+;
+;     set tether-accel-angular (((Ftow1 * Dgp1) + (Ftow2 * Dgp2))) * 180 / pi ; find torque in degrees
+;
+;     ifelse tether-accel-angular < 0 ; bound the torque value
+;       [set tether-accel-angular max(list tether-accel-angular -50)]
+;       [set tether-accel-angular min (list tether-accel-angular 50)]
+;
+;
+;     ; calculate acceleration components from tether in world frame
+;     set tether-accel-x ((tether-accel-x1 * sin(heading)) - (tether-accel-y1 * cos(heading)))
+;     set tether-accel-y ((tether-accel-x1 * cos(heading)) + (tether-accel-y1 * sin(heading)))
+;
+;
+;  ]
+;  [
+;    set tether-accel-angular 0
+;    set tether-accel-x 0
+;    set tether-accel-y 0
+;  ]
+;
+;  ; combine accelerations
+;  set a-x a-x-no-tether  + tether-accel-x
+;  set a-y a-y-no-tether  + tether-accel-y
+;
+;  set acceleration (list a-x a-y)
+;  set angular-acceleration angular-acceleration-no-tether + tether-accel-angular
+;
+;  ; update velocities
+;  set velocity (list (item 0 velocity + (a-x * tick-delta)) (item 1 velocity + (a-y * tick-delta)) )
+;  set angular-velocity (angular-velocity + (angular-acceleration * tick-delta) + impact-heading)
+;
+;end
+
 to sled_dynamics
 
   calculate_acceleration_without_tether
@@ -501,6 +615,20 @@ to sled_dynamics
 
   let c1 attachment-point count sleds ; right attachment point
   let c2 attachment-point (count sleds + 1) ; left attachment point
+
+  ask c1
+  [
+    calculate-tether-acceleration
+  ]
+
+  ask c2
+  [
+    calculate-tether-acceleration
+  ]
+
+  ; above has the attachment points try to calculate the forces from the tethers, the goal will be to then take the variables for acceleration components saved to the attachment-point
+  ; next should be to pull the values from the attach-points and then combine them to get the true acceleration components for the sled and the dog later as well, then
+  ; all the tether calculation could be done in one procedure rather than for each agent dynamics, also this will allow multiple tethers connected to one point
 
 
   ifelse [count my-links] of c1 + [count my-links] of c2 > 0 ; only calculate tether force if both attachment points are linked to something
@@ -539,7 +667,7 @@ to sled_dynamics
      let Ftow1 0
      let Ftow2 0
 
-     ifelse [distance c_tug1] of c1 > rope-length ; only enact force if the rope is "taut"
+     ifelse [distance c_tug1] of c1 > (rope-length / meters-per-patch)  ; only enact force if the rope is "taut"
      [
        set Ftow1 [Ftow] of tug1
      ]
@@ -547,7 +675,7 @@ to sled_dynamics
        set Ftow1 0
      ]
 
-     ifelse [distance c_tug2] of c2 > rope-length ; only enact force if the rope is "taut"
+   ifelse [distance c_tug2] of c2 > (rope-length / meters-per-patch) ; only enact force if the rope is "taut"
      [
        set Ftow2 [Ftow] of tug2
      ]
@@ -570,6 +698,7 @@ to sled_dynamics
      set tether-accel-x ((tether-accel-x1 * sin(heading)) - (tether-accel-y1 * cos(heading)))
      set tether-accel-y ((tether-accel-x1 * cos(heading)) + (tether-accel-y1 * sin(heading)))
 
+
   ]
   [
     set tether-accel-angular 0
@@ -589,6 +718,149 @@ to sled_dynamics
   set angular-velocity (angular-velocity + (angular-acceleration * tick-delta) + impact-heading)
 
 end
+
+to calculate-tether-acceleration ; each attatchment point calculate the net force and direction
+
+ ;;; tether tow calculations
+   let D [len] of turtle attached-to-ID * 0.3 ; vertical position of attachment point (along length of agent)
+   let B [width] of turtle attached-to-ID * 0.6 ; horizontal  position of attachment point (along length of agent)
+
+   let linked-with-set link-neighbors
+   let linked-with-list (list)
+
+   let i 0
+   while [i < count turtles]
+   [
+     if member? turtle i  linked-with-set
+     [set linked-with-list fput (turtle i) linked-with-list]
+     set i (i + 1)
+   ]
+
+   let linked-with-main-bodies-list (list )
+
+   let tether-accel-x-list (list )
+   let tether-accel-y-list (list )
+
+   foreach linked-with-list [ j ->
+
+     set linked-with-main-bodies-list fput (turtle [attached-to-ID] of j) linked-with-main-bodies-list
+     let w1 0
+
+    ifelse ( [xcor] of j - xcor) = 0 and ( [ycor] of j - ycor) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+      [set w1 0]
+      [set w1 (- (90 - [heading] of turtle attached-to-ID) + (90 - atan ( [xcor] of j - xcor) ( [ycor] of j - ycor) ) )]
+
+     set w1 angle_wrap w1
+
+     let Dgp1 (D - (B * 0.5)*(tan(w1)))* sin(w1) ; arm of force on c1 to the center of gravity
+
+     let Ftow1 0
+
+     let K rope-stiffness
+     let damp-coef 0.1 * sqrt(4 * [mass] of turtle attached-to-ID * K)
+
+
+     let Ftow1_x (K * abs(xcor - [xcor] of j)) + (damp-coef * abs(vx - [vx] of j ))
+     let Ftow1_y (K * abs(ycor - [ycor] of j)) + (damp-coef * abs(vy - [vy] of j ))
+
+     let Ftow_mag 0
+
+
+     ifelse distance j > (rope-length / meters-per-patch) ; only sets the tether force if rope is 'taut'
+     [
+       set Ftow_mag sqrt((Ftow1_x) ^ 2 + (Ftow1_y) ^ 2)
+     ]
+     [
+       set Ftow_mag 0
+     ]
+
+     ; calculate acceleration components from tether in body frame
+     let tether-accel-x1-body (Ftow_mag * cos(w1) * 1 ) / [mass] of turtle attached-to-ID
+     let tether-accel-y1-body (Ftow_mag * sin(w1) * 1) / [mass] of turtle attached-to-ID
+
+      ; calculate acceleration components from tether in world frame
+      let tether-accel-x1 ((tether-accel-x1-body * sin([heading] of turtle attached-to-ID)) - (tether-accel-y1-body * cos([heading] of turtle attached-to-ID)))
+      let tether-accel-y1 ((tether-accel-x1-body * cos([heading] of turtle attached-to-ID)) + (tether-accel-y1-body * sin([heading] of turtle attached-to-ID)))
+
+      set tether-accel-x-list lput tether-accel-x1 tether-accel-x-list
+      set tether-accel-y-list lput tether-accel-y1 tether-accel-y-list
+
+   ]
+
+   set tether-accel-x-sum sum tether-accel-x-list
+   set tether-accel-y-sum sum tether-accel-y-list
+
+;   print tether-accel-y-sum
+
+   ; i think the reason that this accel-y isn't matching the previous calc accel-y is because it is combining the values (maybe need to average them)
+
+
+
+
+;   ; set point of attachment of tugs (in case it isn't at the dogs center)
+;   let c_tug1 one-of attachment-points with [attached-to-ID = [who] of tug1]
+;   let c_tug2 one-of attachment-points with [attached-to-ID = [who] of tug2]
+;
+;   ; initialize angle variables
+;   let w1 0
+;   let w2 0
+;
+;   ifelse (- [xcor] of c1 + [xcor] of c_tug1) = 0 and (- [ycor] of c1 + [ycor] of c_tug1) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+;     [set w1 0]
+;     [set w1 (atan (- [xcor] of c1 + [xcor] of c_tug1) (- [ycor] of c1 + [ycor] of c_tug1)) - heading]
+;
+;   ifelse (- [xcor] of c2 + [xcor] of tug2) = 0 and (- [ycor] of c2 + [ycor] of c_tug2) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+;     [set w2 0]
+;     [set w2 (atan (-[xcor] of c2 + [xcor] of c_tug2) (-[ycor] of c2 + [ycor] of c_tug2))  - heading]
+;
+;   ; wrap angle to be within [-180, 180)
+;   set w1 angle_wrap w1
+;   set w2 angle_wrap w2
+;
+;
+;
+;
+;   let Dgp1 (D - (B * 0.5)*(tan(w1)))* sin(w1) ; arm of force on c1 to the center of gravity
+;   let Dgp2 (D - (B * 0.5)*(tan(w2)))* sin(w2) ; arm of force on c2 to the center of gravity
+;
+;  ;initialize tow forces locally
+;   let Ftow1 0
+;   let Ftow2 0
+;
+;   ifelse [distance c_tug1] of c1 > (rope-length / meters-per-patch)  ; only enact force if the rope is "taut"
+;   [
+;     set Ftow1 [Ftow] of tug1
+;   ]
+;   [
+;     set Ftow1 0
+;   ]
+;
+;   ifelse [distance c_tug2] of c2 > (rope-length / meters-per-patch) ; only enact force if the rope is "taut"
+;   [
+;     set Ftow2 [Ftow] of tug2
+;   ]
+;   [
+;     set Ftow2 0
+;   ]
+;
+;   ; calculate acceleration components from tether in body frame
+;   let tether-accel-x1 (Ftow1 * cos(w1) + Ftow2 * cos(w2)) / mass
+;   let tether-accel-y1 (Ftow1 * sin(w1) + Ftow2 * sin(w2)) / mass
+;
+;   set tether-accel-angular (((Ftow1 * Dgp1) + (Ftow2 * Dgp2))) * 180 / pi ; find torque in degrees
+;
+;   ifelse tether-accel-angular < 0 ; bound the torque value
+;     [set tether-accel-angular max(list tether-accel-angular -50)]
+;     [set tether-accel-angular min (list tether-accel-angular 50)]
+;
+;
+;   ; calculate acceleration components from tether in world frame
+;   set tether-accel-x ((tether-accel-x1 * sin(heading)) - (tether-accel-y1 * cos(heading)))
+;   set tether-accel-y ((tether-accel-x1 * cos(heading)) + (tether-accel-y1 * sin(heading)))
+
+
+end
+
 
 
 
@@ -613,7 +885,7 @@ to dog_dynamics
     ; initialize angle variable
     let w1 0
 
-    ifelse (- [xcor] of connected-point + xcor ) = 0 and (- [ycor] of connected-point + ycor) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+    ifelse ( [xcor] of connected-point - [xcor] of c1) = 0 and ( [ycor] of connected-point - [ycor] of c1) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
       [set w1 0]
       [set w1 (- (90 - heading) + (90 - atan ( [xcor] of connected-point - [xcor] of c1) ( [ycor] of connected-point - [ycor] of c1) ) )]
 
@@ -642,7 +914,7 @@ to dog_dynamics
     let Ftow1_y (K * abs([ycor] of c1 - [ycor] of connected-point)) + (damp-coef * abs([vy] of c1 - [vy] of connected-point ))
 
 
-    ifelse [distance connected-point] of c1 > rope-length ; only sets the tether force if rope is 'taut'
+    ifelse [distance connected-point] of c1 > (rope-length / meters-per-patch) ; only sets the tether force if rope is 'taut'
     [
       set Ftow sqrt((Ftow1_x) ^ 2 + (Ftow1_y) ^ 2)
     ]
@@ -694,7 +966,7 @@ to calculate_acceleration_without_tether
     let ell len / 2 ; length of lever arm from motor to center of mass is half the length of the whole agent
     set drag-heading (rot-drag-coef * angular-velocity)
 
-    let f_drive item 0 inputs ; force of forwawrd thrust (Newtons)
+    let f_drive (item 0 inputs) / meters-per-patch ; force of forwawrd thrust (Newtons) multiplied by meter-per-patch to convert it properly
     let motor_angle item 1 inputs ; angle of motor angle
 
     let alpha 0 ; initializing angle of true resultant velocity in world coordinate
@@ -716,11 +988,6 @@ to calculate_acceleration_without_tether
     let drag_sideways(k-d-lateral * v_sideways)
     let body_drag-x (- drag_forward)
     let body_drag-y (- drag_sideways)
-
-    ; convert drag to world frame components using rotation matrix
-    set F-drag-x ((body_drag-x * sin(heading)) - (body_drag-y * cos(heading)))
-    set F-drag-y ((body_drag-x * cos(heading)) + (body_drag-y * sin(heading)))
-
 
     ; calculate acceleration in body frame
     let body_a-x (f_drive * cos(motor_angle) + body_drag-x) / mass
@@ -875,8 +1142,8 @@ end
 GRAPHICS-WINDOW
 735
 17
-1328
-611
+1329
+612
 -1
 -1
 7.235
@@ -941,8 +1208,8 @@ SLIDER
 seed-no
 seed-no
 0
-100
-50.0
+20
+0.0
 1
 1
 NIL
@@ -960,16 +1227,16 @@ show_path?
 -1000
 
 SLIDER
-336
-859
-472
-892
+558
+404
+694
+437
 meters-per-patch
 meters-per-patch
-0
-100
+0.25
+5
 1.0
-1
+0.25
 1
 NIL
 HORIZONTAL
@@ -1015,10 +1282,10 @@ SLIDER
 119
 number-of-dogs
 number-of-dogs
-0
+2
 10
 2.0
-1
+2
 1
 NIL
 HORIZONTAL
@@ -1072,9 +1339,9 @@ NIL
 
 BUTTON
 560
-30
+28
 704
-63
+61
 Disconnect Tether
 ask links [die]
 NIL
@@ -1096,7 +1363,7 @@ drive_motor
 drive_motor
 0
 20
-10.0
+3.0
 1
 1
 N
@@ -1168,6 +1435,16 @@ S
 NIL
 NIL
 1
+
+CHOOSER
+241
+129
+407
+174
+Dog-Connection-Point
+Dog-Connection-Point
+"Center" "Rear"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
