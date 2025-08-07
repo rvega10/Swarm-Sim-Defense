@@ -504,107 +504,6 @@ to decrease_thrust ; procedure for when "D" key is pressed
 end
 
 
-
-;to sled_dynamics
-;
-;  calculate_acceleration_without_tether
-;
-;  ;;; tether tow calculations
-;  let D len * 0.3 ; vertical position of attachment point (along length of agent)
-;  let B width * 0.6 ; horizontal  position of attachment point (along length of agent)
-;
-;  let c1 attachment-point count sleds ; right attachment point
-;  let c2 attachment-point (count sleds + 1) ; left attachment point
-;
-;
-;  ifelse [count my-links] of c1 + [count my-links] of c2 > 0 ; only calculate tether force if both attachment points are linked to something
-;  [
-;
-;     let tug1 dog [attached-to-ID] of ([one-of link-neighbors] of c1) ; dog tied to right attachment-points
-;     let tug2 dog [attached-to-ID] of ([one-of link-neighbors] of c2) ; dog tied to left attachment-points
-;
-;     ; set point of attachment of tugs (in case it isn't at the dogs center)
-;     let c_tug1 one-of attachment-points with [attached-to-ID = [who] of tug1]
-;     let c_tug2 one-of attachment-points with [attached-to-ID = [who] of tug2]
-;
-;     ; initialize angle variables
-;     let w1 0
-;     let w2 0
-;
-;     ifelse (- [xcor] of c1 + [xcor] of c_tug1) = 0 and (- [ycor] of c1 + [ycor] of c_tug1) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
-;       [set w1 0]
-;       [set w1 (atan (- [xcor] of c1 + [xcor] of c_tug1) (- [ycor] of c1 + [ycor] of c_tug1)) - heading]
-;
-;     ifelse (- [xcor] of c2 + [xcor] of tug2) = 0 and (- [ycor] of c2 + [ycor] of c_tug2) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
-;       [set w2 0]
-;       [set w2 (atan (-[xcor] of c2 + [xcor] of c_tug2) (-[ycor] of c2 + [ycor] of c_tug2))  - heading]
-;
-;     ; wrap angle to be within [-180, 180)
-;     set w1 angle_wrap w1
-;     set w2 angle_wrap w2
-;
-;
-;
-;
-;     let Dgp1 (D - (B * 0.5)*(tan(w1)))* sin(w1) ; arm of force on c1 to the center of gravity
-;     let Dgp2 (D - (B * 0.5)*(tan(w2)))* sin(w2) ; arm of force on c2 to the center of gravity
-;
-;    ;initialize tow forces locally
-;     let Ftow1 0
-;     let Ftow2 0
-;
-;     ifelse [distance c_tug1] of c1 > (rope-length / meters-per-patch)  ; only enact force if the rope is "taut"
-;     [
-;       set Ftow1 [Ftow] of tug1
-;     ]
-;     [
-;       set Ftow1 0
-;     ]
-;
-;     ifelse [distance c_tug2] of c2 > (rope-length / meters-per-patch) ; only enact force if the rope is "taut"
-;     [
-;       set Ftow2 [Ftow] of tug2
-;     ]
-;     [
-;       set Ftow2 0
-;     ]
-;
-;     ; calculate acceleration components from tether in body frame
-;     let tether-accel-x1 (Ftow1 * cos(w1) + Ftow2 * cos(w2)) / mass
-;     let tether-accel-y1 (Ftow1 * sin(w1) + Ftow2 * sin(w2)) / mass
-;
-;     set tether-accel-angular (((Ftow1 * Dgp1) + (Ftow2 * Dgp2))) * 180 / pi ; find torque in degrees
-;
-;     ifelse tether-accel-angular < 0 ; bound the torque value
-;       [set tether-accel-angular max(list tether-accel-angular -50)]
-;       [set tether-accel-angular min (list tether-accel-angular 50)]
-;
-;
-;     ; calculate acceleration components from tether in world frame
-;     set tether-accel-x ((tether-accel-x1 * sin(heading)) - (tether-accel-y1 * cos(heading)))
-;     set tether-accel-y ((tether-accel-x1 * cos(heading)) + (tether-accel-y1 * sin(heading)))
-;
-;
-;  ]
-;  [
-;    set tether-accel-angular 0
-;    set tether-accel-x 0
-;    set tether-accel-y 0
-;  ]
-;
-;  ; combine accelerations
-;  set a-x a-x-no-tether  + tether-accel-x
-;  set a-y a-y-no-tether  + tether-accel-y
-;
-;  set acceleration (list a-x a-y)
-;  set angular-acceleration angular-acceleration-no-tether + tether-accel-angular
-;
-;  ; update velocities
-;  set velocity (list (item 0 velocity + (a-x * tick-delta)) (item 1 velocity + (a-y * tick-delta)) )
-;  set angular-velocity (angular-velocity + (angular-acceleration * tick-delta) + impact-heading)
-;
-;end
-
 to sled_dynamics
 
   calculate_acceleration_without_tether
@@ -789,75 +688,6 @@ to calculate-tether-acceleration ; each attatchment point calculate the net forc
 
    set tether-accel-x-sum sum tether-accel-x-list
    set tether-accel-y-sum sum tether-accel-y-list
-
-;   print tether-accel-y-sum
-
-   ; i think the reason that this accel-y isn't matching the previous calc accel-y is because it is combining the values (maybe need to average them)
-
-
-
-
-;   ; set point of attachment of tugs (in case it isn't at the dogs center)
-;   let c_tug1 one-of attachment-points with [attached-to-ID = [who] of tug1]
-;   let c_tug2 one-of attachment-points with [attached-to-ID = [who] of tug2]
-;
-;   ; initialize angle variables
-;   let w1 0
-;   let w2 0
-;
-;   ifelse (- [xcor] of c1 + [xcor] of c_tug1) = 0 and (- [ycor] of c1 + [ycor] of c_tug1) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
-;     [set w1 0]
-;     [set w1 (atan (- [xcor] of c1 + [xcor] of c_tug1) (- [ycor] of c1 + [ycor] of c_tug1)) - heading]
-;
-;   ifelse (- [xcor] of c2 + [xcor] of tug2) = 0 and (- [ycor] of c2 + [ycor] of c_tug2) = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
-;     [set w2 0]
-;     [set w2 (atan (-[xcor] of c2 + [xcor] of c_tug2) (-[ycor] of c2 + [ycor] of c_tug2))  - heading]
-;
-;   ; wrap angle to be within [-180, 180)
-;   set w1 angle_wrap w1
-;   set w2 angle_wrap w2
-;
-;
-;
-;
-;   let Dgp1 (D - (B * 0.5)*(tan(w1)))* sin(w1) ; arm of force on c1 to the center of gravity
-;   let Dgp2 (D - (B * 0.5)*(tan(w2)))* sin(w2) ; arm of force on c2 to the center of gravity
-;
-;  ;initialize tow forces locally
-;   let Ftow1 0
-;   let Ftow2 0
-;
-;   ifelse [distance c_tug1] of c1 > (rope-length / meters-per-patch)  ; only enact force if the rope is "taut"
-;   [
-;     set Ftow1 [Ftow] of tug1
-;   ]
-;   [
-;     set Ftow1 0
-;   ]
-;
-;   ifelse [distance c_tug2] of c2 > (rope-length / meters-per-patch) ; only enact force if the rope is "taut"
-;   [
-;     set Ftow2 [Ftow] of tug2
-;   ]
-;   [
-;     set Ftow2 0
-;   ]
-;
-;   ; calculate acceleration components from tether in body frame
-;   let tether-accel-x1 (Ftow1 * cos(w1) + Ftow2 * cos(w2)) / mass
-;   let tether-accel-y1 (Ftow1 * sin(w1) + Ftow2 * sin(w2)) / mass
-;
-;   set tether-accel-angular (((Ftow1 * Dgp1) + (Ftow2 * Dgp2))) * 180 / pi ; find torque in degrees
-;
-;   ifelse tether-accel-angular < 0 ; bound the torque value
-;     [set tether-accel-angular max(list tether-accel-angular -50)]
-;     [set tether-accel-angular min (list tether-accel-angular 50)]
-;
-;
-;   ; calculate acceleration components from tether in world frame
-;   set tether-accel-x ((tether-accel-x1 * sin(heading)) - (tether-accel-y1 * cos(heading)))
-;   set tether-accel-y ((tether-accel-x1 * cos(heading)) + (tether-accel-y1 * sin(heading)))
-
 
 end
 
@@ -1384,24 +1214,6 @@ motor-angle
 deg
 HORIZONTAL
 
-PLOT
-59
-493
-700
-853
-Plot for Testing
-NIL
-NIL
-0.0
-0.1
-0.0
-0.1
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" ""
-
 BUTTON
 377
 253
@@ -1444,7 +1256,7 @@ CHOOSER
 Dog-Connection-Point
 Dog-Connection-Point
 "Center" "Rear"
-0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
