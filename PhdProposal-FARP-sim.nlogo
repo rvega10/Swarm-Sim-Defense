@@ -4580,10 +4580,64 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.2
+NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="Scoring_parameter_sweep" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="125001"/>
+    <exitCondition>end_flag &gt; 10</exitCondition>
+    <metric>score</metric>
+    <metric>win-loss-ratio</metric>
+    <enumeratedValueSet variable="speed-drugboats">
+      <value value="2.5"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-hunters" first="5" step="5" last="200"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="50"/>
+  </experiment>
+  <experiment name="Scoring_parameter_sweep_resume" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>score_procedure</go>
+    <timeLimit steps="125001"/>
+    <exitCondition>end_flag &gt; 10</exitCondition>
+    <metric>score</metric>
+    <metric>win-loss-ratio</metric>
+    <enumeratedValueSet variable="seed-no">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="speed-drugboats">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="second_percentage">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-hunters" first="100" step="100" last="600"/>
+  </experiment>
+  <experiment name="Scoring_parameter_sweep_more_parallel" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="125001"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>score</metric>
+    <metric>win-loss-ratio</metric>
+    <enumeratedValueSet variable="speed-drugboats">
+      <value value="2.5"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="second_percentage" first="0" step="25" last="100"/>
+    <steppedValueSet variable="number-of-hunters" first="10" step="10" last="250"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="25"/>
+  </experiment>
+  <experiment name="single_run" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>score_procedure</go>
+    <timeLimit steps="125001"/>
+    <exitCondition>end_flag &gt; 0</exitCondition>
+    <metric>score</metric>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
