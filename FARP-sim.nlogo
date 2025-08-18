@@ -3121,7 +3121,7 @@ SWITCH
 145
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
