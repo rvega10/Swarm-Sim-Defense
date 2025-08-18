@@ -1,4 +1,4 @@
-
+;extensions [ profiler]
 
 ;
 ; Variable
@@ -269,7 +269,8 @@ end
 ;;
 to go
 
-  background_procedures ; for general functions like showing FOV
+  ;commented to speed up simulation
+;  background_procedures ; for general functions like showing FOV
 
   ask drugboats
     [
@@ -351,7 +352,7 @@ to go
 ;  ]
 
 
-  do-plots
+;  do-plots
 
 
   if current_run_end_flag = 1
@@ -821,12 +822,12 @@ end
 
 
 to hunter_procedure
-  ifelse caught-flag = 1
-  [
-    setxy min-pxcor min-pycor
-    ht
-  ]
-  [
+;  ifelse caught-flag = 1
+;  [
+;    setxy min-pxcor min-pycor
+;    ht
+;  ]
+;  [
 
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
@@ -992,7 +993,7 @@ to hunter_procedure
      set trapped_count 2500
     ]
   ]
-  ]
+;  ]
 
 end
 
@@ -1550,31 +1551,24 @@ end
 
 
 to mill  ;; control rule for if nothing is detected (for milling)
-  set_actuating_and_extra_variables
-  do_sensing
+
 
    set inputs (list (1 * speed-w-noise) 90 ( 1  * turning-w-noise))
 end
 
 to mill2  ;; control rule for if nothing is detected (for milling)
-  set_actuating_and_extra_variables
-  do_sensing
+
 
    set inputs (list (1 * speed-w-noise) 90 ( -1  * turning-w-noise))
 end
 
 to dispersal ; control rule for if nothing is detected (for diffusion)
-  set_actuating_and_extra_variables
-  do_sensing
 
   set inputs (list (0 * speed-w-noise) 90 ( 1  * turning-w-noise))
 
 end
 
 to dispersal2 ; control rule for if nothing is detected (for diffusion)
-  set_actuating_and_extra_variables
-  do_sensing
-
   set inputs (list (1 * speed-w-noise) 90 ( 1  * turning-w-noise))
 
 end
