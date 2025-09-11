@@ -3406,6 +3406,23 @@ NetLogo 6.4.0
     <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
+  <experiment name="combined_phase_vision-distances" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="35000"/>
+    <exitCondition>end_flag = 1</exitCondition>
+    <metric>combined_phase</metric>
+    <metric>mean v_avg_list</metric>
+    <metric>mean group-rot_list</metric>
+    <metric>mean ang-momentum_list</metric>
+    <metric>mean scatter_list</metric>
+    <metric>mean rad_var_list</metric>
+    <metric>mean circliness_list</metric>
+    <metric>mean diffusion_list</metric>
+    <steppedValueSet variable="vision-distance-sobot" first="0.5" step="0.5" last="9"/>
+    <steppedValueSet variable="vision-distance" first="0.5" step="0.5" last="3"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+  </experiment>
 </experiments>
 @#$#@#$#@
 @#$#@#$#@
