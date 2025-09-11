@@ -62,6 +62,9 @@ globals [ tick-delta
           dist-to-closest-sum
           dist-to-closest-avg
           dist-to-closest-std-sum
+          dist-to-furthest-sum
+          dist-to-furthest-avg
+          dist-to-furthest-std-sum
           rad_var_list
           group-rot_list
           ang-momentum_list
@@ -73,10 +76,15 @@ globals [ tick-delta
           circliness_list_list
           v_avg_list
           dist-to-closest-standard-dev
+          dist-to-furthest-standard-dev
           diffusion_list
           diffusion_val
+          diffusion_opp_list
+          diffusion_opp_val
           combined_phase
           combined_stability_val
+          sobot_distance_list
+          robot_distance_list
          ]
 
 
@@ -138,6 +146,8 @@ robots-own [
            V
            dist-to-closest
            my-dist-to-closest-std
+           dist-to-furthest
+           my-dist-to-furthest-std
            fov-list-sobots
           ]
 sobots-own [
@@ -303,6 +313,7 @@ to initialize_lists
   set scatter_list (list )
   set radius_list (list )
   set diffusion_list (list)
+  set diffusion_opp_list (list)
 
 
   set outer_radius_size_list (list )
@@ -844,8 +855,10 @@ to find-metrics
     set rad_var_comp2 (rad_var_comp1 - rad_var_comp1_mean_sub) ^ 2
 
     set dist-to-closest distance min-one-of other robots [distance myself]
+    set dist-to-furthest distance max-one-of other robots [distance myself]
 
     set my-dist-to-closest-std (dist-to-closest - dist-to-closest-avg)^ 2
+    set my-dist-to-furthest-std (dist-to-furthest - dist-to-furthest-avg)^ 2
 
 
 
@@ -862,6 +875,8 @@ to find-metrics
     set rad_var_comp_sum rad_var_comp_sum + rad_var_comp2
     set dist-to-closest-sum dist-to-closest-sum + dist-to-closest
     set dist-to-closest-std-sum dist-to-closest-std-sum + my-dist-to-closest-std
+    set dist-to-furthest-sum dist-to-furthest-sum + dist-to-furthest
+    set dist-to-furthest-std-sum dist-to-furthest-std-sum + my-dist-to-furthest-std
 
 
    ]
@@ -877,9 +892,13 @@ to find-metrics
    set dist-to-closest-avg (dist-to-closest-sum / number-of-robots)
    set dist-to-closest-standard-dev ( dist-to-closest-std-sum / number-of-robots)
 
+  set dist-to-furthest-avg (dist-to-furthest-sum / number-of-robots)
+   set dist-to-furthest-standard-dev ( dist-to-furthest-std-sum / number-of-robots)
+
 
 ;  set diffusion_val 1 - exp(dist-to-closest-standard-dev / dist-to-closest-avg)
    set diffusion_val dist-to-closest-standard-dev
+  set diffusion_opp_val dist-to-furthest-standard-dev
 
    set outer_radius_size (mean [cc-rad] of centroids )
    set rad_var_comp1_mean (rad_var_comp1_sum / number-of-robots)
@@ -896,6 +915,8 @@ to find-metrics
    set rad_var_comp1_sum 0
    set dist-to-closest-sum 0
    set dist-to-closest-std-sum 0
+   set dist-to-furthest-sum 0
+   set dist-to-furthest-std-sum 0
 
   ifelse length diffusion_list > 1000
     [
@@ -904,6 +925,15 @@ to find-metrics
      ]
     [
       set diffusion_list lput diffusion_val diffusion_list
+    ]
+
+  ifelse length diffusion_opp_list > 1000
+    [
+     set diffusion_opp_list remove-item 0 diffusion_opp_list
+     set diffusion_opp_list lput diffusion_opp_val diffusion_opp_list
+     ]
+    [
+      set diffusion_opp_list lput diffusion_opp_val diffusion_opp_list
     ]
 
 
@@ -1077,12 +1107,11 @@ to classify_behavior
    ]
   ]
 
-  let robot_distance_list (list )
+  set robot_distance_list (list )
   ask robots [set robot_distance_list lput (distance max-one-of other robots [distance myself]) robot_distance_list]
 
-  let sobot_distance_list (list )
+  set sobot_distance_list (list )
   ask sobots [set sobot_distance_list lput (distance max-one-of other sobots [distance myself]) sobot_distance_list]
-
 
   ifelse phase = "Milling" and (max robot_distance_list > max sobot_distance_list)
   [
@@ -2215,7 +2244,7 @@ seed-no
 seed-no
 1
 150
-10.0
+2.0
 1
 1
 NIL
@@ -2230,7 +2259,7 @@ vision-distance
 vision-distance
 0
 100
-0.5
+2.5
 0.5
 1
 m
@@ -2245,7 +2274,7 @@ vision-cone
 vision-cone
 0
 360
-90.0
+45.0
 5
 1
 deg
@@ -2260,7 +2289,7 @@ speed1
 speed1
 0
 5
-1.0
+0.5
 0.5
 1
 m/s
@@ -2275,7 +2304,7 @@ turning-rate1
 turning-rate1
 0
 360
-40.0
+15.0
 5
 1
 deg/s
@@ -2414,7 +2443,7 @@ number-of-robots
 number-of-robots
 0
 30
-4.0
+10.0
 1
 1
 NIL
@@ -2701,7 +2730,7 @@ CHOOSER
 algorithm-robot
 algorithm-robot
 "Milling" "Diffusing" "Diffusing2" "Clustering"
-0
+1
 
 MONITOR
 985
@@ -2723,7 +2752,7 @@ number-of-sobots
 number-of-sobots
 0
 100
-10.0
+0.0
 1
 1
 NIL
@@ -2876,6 +2905,28 @@ MONITOR
 275
 Phase of Whole Group
 combined_phase
+17
+1
+11
+
+MONITOR
+997
+447
+1241
+492
+NIL
+precision (mean diffusion_opp_list) 6
+17
+1
+11
+
+MONITOR
+1015
+528
+1178
+573
+NIL
+max robot_distance_list
 17
 1
 11
@@ -3421,6 +3472,24 @@ NetLogo 6.4.0
     <metric>mean diffusion_list</metric>
     <steppedValueSet variable="vision-distance-sobot" first="0.5" step="0.5" last="3"/>
     <steppedValueSet variable="vision-distance" first="0.5" step="0.5" last="9"/>
+    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+  </experiment>
+  <experiment name="diffusion_parameter_sweep_num_of_agents_forward_speed" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="25000"/>
+    <exitCondition>end_flag = 1</exitCondition>
+    <metric>phase</metric>
+    <metric>mean v_avg_list</metric>
+    <metric>mean group-rot_list</metric>
+    <metric>mean ang-momentum_list</metric>
+    <metric>mean scatter_list</metric>
+    <metric>mean rad_var_list</metric>
+    <metric>mean circliness_list</metric>
+    <metric>mean diffusion_list</metric>
+    <metric>max robot_distance_list</metric>
+    <steppedValueSet variable="speed1" first="0.25" step="0.25" last="5"/>
+    <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
