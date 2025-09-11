@@ -75,6 +75,8 @@ globals [ tick-delta
           dist-to-closest-standard-dev
           diffusion_list
           diffusion_val
+          combined_phase
+          combined_stability_val
          ]
 
 
@@ -371,11 +373,11 @@ to go
     find_adj_matrix
   ]
 
-;  if stability_val > 1000
-;  [
-;    set end_flag  1
-;
-;  ]
+  if combined_stability_val > 3000
+  [
+    set end_flag  1
+
+  ]
 
 
   tick-advance 1
@@ -1073,6 +1075,23 @@ to classify_behavior
     ]
         )
    ]
+  ]
+
+  let robot_distance_list (list )
+  ask robots [set robot_distance_list lput (distance max-one-of other robots [distance myself]) robot_distance_list]
+
+  let sobot_distance_list (list )
+  ask sobots [set sobot_distance_list lput (distance max-one-of other sobots [distance myself]) sobot_distance_list]
+
+
+  ifelse phase = "Milling" and (max robot_distance_list > max sobot_distance_list)
+  [
+    set combined_phase "Separated"
+    set combined_stability_val (combined_stability_val + 1)
+  ]
+  [
+    set combined_phase "N/A"
+    set combined_stability_val 0
   ]
 
 
@@ -2614,11 +2633,11 @@ mean circliness_list
 11
 
 MONITOR
-1083
-218
-1442
-267
-Phase
+997
+158
+1356
+207
+Phase of Robots
 phase
 17
 1
@@ -2849,6 +2868,17 @@ circle2size
 1
 m
 HORIZONTAL
+
+MONITOR
+998
+230
+1153
+275
+Phase of Whole Group
+combined_phase
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
