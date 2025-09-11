@@ -1396,8 +1396,8 @@ to place_robots; defines region and/or orientation of where the robots should st
 ;    let sr_patches patches with [(distancexy 0 0 < (sqrt(number-of-robots) * (1) * (1) ) ) and pxcor != 0 and pycor != 0]
 ;    move-to one-of sr_patches with [(not any? other turtles in-radius (0.4))]
 ;     setxy (xcor + 0.01) (ycor + 0.01)
-      let tycor one-of (range (-1) (1) 0.01)
-       let txcor one-of (range (-1) (1) 0.01)
+      let tycor one-of (range (-1) (1) 0.001)
+       let txcor one-of (range (-1) (1) 0.001)
 
        setxy txcor tycor
    ]
@@ -1470,8 +1470,8 @@ to place_sobots; defines region and/or orientation of where the sobots should st
   if sobot_setup = "Random"
    [
 
-      let tycor one-of (range (min-pycor + 1) (max-pycor - 1) 0.01)
-       let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.01)
+      let tycor one-of (range (min-pycor + 1) (max-pycor - 1) 0.001)
+       let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.001)
 
        setxy txcor tycor
    ]
@@ -2215,7 +2215,7 @@ seed-no
 seed-no
 1
 150
-8.0
+10.0
 1
 1
 NIL
@@ -2230,7 +2230,7 @@ vision-distance
 vision-distance
 0
 100
-8.0
+0.5
 0.5
 1
 m
@@ -2738,7 +2738,7 @@ vision-distance-sobot
 vision-distance-sobot
 0
 10
-2.0
+0.5
 0.1
 1
 m
@@ -3419,8 +3419,8 @@ NetLogo 6.4.0
     <metric>mean rad_var_list</metric>
     <metric>mean circliness_list</metric>
     <metric>mean diffusion_list</metric>
-    <steppedValueSet variable="vision-distance-sobot" first="0.5" step="0.5" last="9"/>
-    <steppedValueSet variable="vision-distance" first="0.5" step="0.5" last="3"/>
+    <steppedValueSet variable="vision-distance-sobot" first="0.5" step="0.5" last="3"/>
+    <steppedValueSet variable="vision-distance" first="0.5" step="0.5" last="9"/>
     <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
   </experiment>
 </experiments>
