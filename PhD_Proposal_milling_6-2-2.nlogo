@@ -1,4 +1,4 @@
-extensions [palette
+extensions [
             matrix]
 ;
 ; Variable
@@ -524,7 +524,7 @@ ifelse paint_fov?
                 [
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 270
@@ -534,7 +534,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "270-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 180
@@ -544,7 +544,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "180-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 90
@@ -554,7 +554,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "90-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 45
@@ -564,7 +564,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "45-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 60
@@ -574,7 +574,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "60-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           vision-cone = 30
@@ -584,7 +584,7 @@ ifelse paint_fov?
                   set size 2 * (vision-distance * 1)
                   set heading ([heading] of myself)
                   set shape "30-deg-fov"
-                  palette:set-transparency 50
+                 ;palette:set-transparency 50
                 ]
           ]
           [
@@ -1841,7 +1841,7 @@ SWITCH
 145
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
